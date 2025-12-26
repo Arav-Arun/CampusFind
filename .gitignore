@@ -5,6 +5,7 @@ __pycache__/
 *$py.class
 venv/
 .env
+.env*
 
 # Node
 node_modules/
@@ -14,9 +15,16 @@ dist/
 # Uploads (Keep gitkeep if needed, but ignore files)
 backend/uploads/*
 !backend/uploads/.gitkeep
+server/uploads/*
+!server/uploads/.gitkeep
 
 # Database
 backend/instance/
 *.db
 *.log
 
+# Firebase & Secrets (CRITICAL)
+serviceAccountKey.json
+server/serviceAccountKey.json
+*.pem
+*.key
