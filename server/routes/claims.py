@@ -339,18 +339,18 @@ def get_notifications(current_user):
     
     for c in my_claims:
         if c.status in ['accepted', 'rejected', 'completed']:
-             status_text = c.status
-             if c.status == 'completed':
-                 status_text = 'verified & recovered'
-                 
-             nid = f"claim_{c.id}_{c.status}"
-             notifications.append({
-                 "id": nid,
-                 "text": f"Your claim for '{c.item.description}' was {status_text}",
-                 "link": f"/item/{c.item.id}",
-                 "time": c.timestamp.isoformat(),
-                 "read": nid in read_list
-             })
+            status_text = c.status
+            if c.status == 'completed':
+                status_text = 'verified & recovered'
+                
+            nid = f"claim_{c.id}_{c.status}"
+            notifications.append({
+                "id": nid,
+                "text": f"Your claim for '{c.item.description}' was {status_text}",
+                "link": f"/item/{c.item.id}",
+                "time": c.timestamp.isoformat(),
+                "read": nid in read_list
+            })
              
     # Sort by time
     notifications.sort(key=lambda x: x['time'], reverse=True)

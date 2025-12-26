@@ -1,11 +1,13 @@
 from flask import Blueprint, request, jsonify
-from models import Item, Claim, db
-from ai_models.ai_service import analyze_image
+from models import Item, Claim, User, db
+from ai_models.ai_service import analyze_image, generate_verification_question, find_matches_with_images
 import os
 import json
+import traceback
+import base64
+import jwt
 from datetime import datetime
 from werkzeug.utils import secure_filename
-from ai_models.ai_service import generate_verification_question
 
 items_bp = Blueprint('items', __name__)
 
@@ -17,12 +19,7 @@ def create_item():
     - Runs AI analysis (Gemini Vision) to auto-tag (category, color, etc.)
     - Stores outcome in DB
     """
-    import traceback
-    import os
-    import json
-    from datetime import datetime
-    from werkzeug.utils import secure_filename
-    from ai_models.ai_service import generate_verification_question # Add missing import
+
 
     # print("DEBUG: Entered create_item")
     try:
@@ -36,7 +33,7 @@ def create_item():
 
         # ... (Processing Base64 and Image) ...
         # Process Image for DB (Base64)
-        import base64
+
         file_content = file.read()
         base64_data = base64.b64encode(file_content).decode('utf-8')
         mime_type = file.content_type or "image/jpeg"
@@ -95,10 +92,10 @@ def create_item():
         # 3. Get User ID from Token
         token = request.headers.get('Authorization')
         if not token or not token.startswith('Bearer '):
-             return jsonify({"error": "Unauthorized: Missing or invalid token"}), 401
+            return jsonify({"error": "Unauthorized: Missing or invalid token"}), 401
              
         try:
-            import jwt
+
             SECRET_KEY = os.getenv('SECRET_KEY', 'dev_secret_key_change_me')
             token_str = token.split(' ')[1]
             data = jwt.decode(token_str, SECRET_KEY, algorithms=["HS256"])
@@ -143,7 +140,7 @@ def create_item():
         # We reward people for helping others, not for losing things!
         if new_item.type == 'found':
             try:
-                from models import User
+
                 user = User.query.get(user_id)
                 if user:
                     user.trust_score = getattr(user, 'trust_score', 0) + 5
@@ -236,8 +233,7 @@ def get_my_items():
          return jsonify({"error": "Unauthorized"}), 401
     
     try:
-        import jwt
-        import os
+
         # from models import Claim # Imported at top level now
         
         SECRET_KEY = os.getenv('SECRET_KEY', 'dev_secret_key_change_me')
@@ -330,7 +326,7 @@ def reanalyze_item(id):
     Useful for items that failed analysis or were uploaded before AI fixes.
     """
     try:
-        from ai_models.ai_service import analyze_image
+
         item = Item.query.get_or_404(id)
         
         if not item.image_url:
@@ -380,7 +376,7 @@ def get_matches(id):
     Compares the item against opposite-type items using Gemini Vision
     """
     try:
-        from ai_models.ai_service import find_matches_with_images
+
         
         # Get source item
         source_item = Item.query.get_or_404(id)
