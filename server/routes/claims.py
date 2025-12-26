@@ -97,7 +97,7 @@ def draft_claim_message(current_user):
 
         genai.configure(api_key=api_key)
 
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model = genai.GenerativeModel("gemini-1.5-flash")
 
         prompt = f"""
         You are an AI assistant for a Lost & Found app.
