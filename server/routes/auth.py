@@ -131,7 +131,14 @@ def get_current_user():
             
         # Calculate Gamification Stats
         items_reported = len(user.items)
-        items_recovered = sum(1 for item in user.items if item.status in ['claimed', 'matched', 'completed'])
+        
+        # 1. Items I reported that got resolved
+        my_reported_resolved = sum(1 for item in user.items if item.status in ['claimed', 'matched', 'completed'])
+        
+        # 2. Items I found (I claimed and completed)
+        my_found_resolved = sum(1 for claim in user.claims if claim.status == 'completed')
+        
+        items_recovered = my_reported_resolved + my_found_resolved
         
         # Calculate Trust Score dynamically (or rely on DB field if updated by claims)
         # For now, let's ensure it reflects the DB field which should be updated on claim completion
