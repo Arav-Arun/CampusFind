@@ -1,5 +1,4 @@
 import React from "react";
-import { motion } from "framer-motion";
 
 const Button = ({
   children,
@@ -19,16 +18,14 @@ const Button = ({
   };
 
   return (
-    <motion.button
-      whileTap={{ scale: 0.95 }}
-      whileHover={{ scale: 1.02 }}
-      className={`${baseStyle} ${variants[variant]} ${className}`}
+    <button
+      className={`${baseStyle} ${variants[variant]} ${className} hover:scale-[1.02] active:scale-95`}
       onClick={onClick}
       type={props.type || "button"} // Default to button if not specified to prevent accidental submits
       {...props}
     >
       {children}
-    </motion.button>
+    </button>
   );
 };
 

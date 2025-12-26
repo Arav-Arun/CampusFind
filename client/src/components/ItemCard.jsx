@@ -1,16 +1,11 @@
 import React from "react";
 import { MapPin, Calendar, Tag } from "lucide-react";
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
 const ItemCard = ({ item }) => {
   return (
     <Link to={`/item/${item.id}`}>
-      <motion.div
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className="bg-surface rounded-xl overflow-hidden border border-white/5 hover:border-accent/30 transition-all duration-300 shadow-lg hover:shadow-accent/10 group cursor-pointer"
-      >
+      <div className="bg-surface rounded-xl overflow-hidden border border-white/5 hover:border-accent/30 transition-all duration-300 shadow-lg hover:shadow-accent/10 group cursor-pointer hover:scale-[1.02] active:scale-[0.98]">
         <div className="aspect-video bg-black/50 relative overflow-hidden">
           <img
             src={
@@ -62,7 +57,7 @@ const ItemCard = ({ item }) => {
             )}
           </div>
         </div>
-      </motion.div>
+      </div>
     </Link>
   );
 };

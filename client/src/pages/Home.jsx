@@ -33,7 +33,7 @@ const Home = () => {
 
   useEffect(() => {
     fetchItems();
-  }, [activeTab, selectedCategory]);
+  }, [activeTab, selectedCategory]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchItems = async (searchQuery = "") => {
     setLoading(true);

@@ -50,14 +50,14 @@ const ItemDetail = () => {
 
   useEffect(() => {
     fetchItemAndMatches();
-  }, [id]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch claims when user or item changes
   useEffect(() => {
     if (user && item) {
       fetchClaims();
     }
-  }, [user, item]);
+  }, [user, item]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchItemAndMatches = async () => {
     try {
@@ -168,7 +168,7 @@ const ItemDetail = () => {
       }, 3000);
     }
     return () => clearInterval(interval);
-  }, [myClaim?.status, isOwner, claims]);
+  }, [myClaim?.status, isOwner, claims]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Success Effect
   const completedClaim = claims.find((c) => c.status === "completed");
