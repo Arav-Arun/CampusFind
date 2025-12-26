@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 import firebase_admin
+import json
 from firebase_admin import credentials, auth
 from models import db, User
 import os
@@ -12,35 +13,51 @@ auth_google_bp = Blueprint('auth_google', __name__)
 # Initialize Firebase Admin
 # We check if it's already initialized to avoid errors during reloads/hot-restarts
 if not firebase_admin._apps:
-    cred_path = os.getenv('FIREBASE_CREDENTIALS_PATH')
+    # STRATEGY 1: Environment Variable (Secure for Vercel/Production)
+    # This allows us to inject the JSON content without committing the file
+    firebase_json = os.getenv('FIREBASE_SERVICE_ACCOUNT_JSON')
     
-    # Resolve absolute path if relative
-    if cred_path and not os.path.isabs(cred_path):
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # server/
-        cred_path = os.path.join(base_dir, cred_path)
-
-    # Strategy:
-    # 1. Try loading credentials from a file (Production/Local explicit path)
-    # 2. Fallback to default credentials (often works in Google Cloud environments)
-    if cred_path and os.path.exists(cred_path):
+    cred = None
+    
+    if firebase_json:
         try:
-            cred = credentials.Certificate(cred_path)
+            # Parse the JSON string from env var
+            key_dict = json.loads(firebase_json)
+            cred = credentials.Certificate(key_dict)
+            print("DEBUG: Loaded Firebase Credentials from Environment Variable")
+        except Exception as e:
+            print(f"ERROR: Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON: {e}")
+
+    # STRATEGY 2: File Path (Local Development)
+    if not cred:
+        cred_path = os.getenv('FIREBASE_CREDENTIALS_PATH')
+        # Resolve absolute path if relative
+        if cred_path and not os.path.isabs(cred_path):
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # server/
+            cred_path = os.path.join(base_dir, cred_path)
+
+        if cred_path and os.path.exists(cred_path):
+            try:
+                cred = credentials.Certificate(cred_path)
+                print(f"DEBUG: Loaded Firebase Credentials from file at {cred_path}")
+            except Exception as e:
+                print(f"ERROR: Failed to load Firebase Cert file: {e}")
+
+    # Initialize App
+    try:
+        if cred:
             firebase_admin.initialize_app(cred, {
                 'storageBucket': os.getenv('FIREBASE_STORAGE_BUCKET')
             })
-            print(f"DEBUG: Firebase Admin Initialized with Certificate at {cred_path}")
-        except Exception as e:
-            print(f"ERROR: Failed to load Firebase Cert: {e}")
-    else:
-        print("WARNING: No Firebase Credentials found. Google Auth may fail locally.")
-        try:
-             # Attempt default init for cloud environments
-             firebase_admin.initialize_app(None, {
+            print("DEBUG: Firebase Admin Initialized successfully")
+        else:
+            print("WARNING: No Firebase Credentials found. Google Auth may fail locally.")
+            # Fallback for Google Cloud environments (rarely used here but good practice)
+            firebase_admin.initialize_app(None, {
                 'storageBucket': os.getenv('FIREBASE_STORAGE_BUCKET')
-             }) 
-             print("DEBUG: Firebase Admin Initialized with Default Credentials")
-        except Exception as e:
-            print(f"DEBUG: Firebase Init failed: {e}")
+            }) 
+    except Exception as e:
+        print(f"DEBUG: Firebase Init failed: {e}")
 
 @auth_google_bp.route('/google', methods=['POST'])
 def google_login():
