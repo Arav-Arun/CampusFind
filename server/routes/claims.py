@@ -3,7 +3,6 @@ from models import db, Claim, Item, User
 from routes.auth import token_required
 from datetime import datetime
 import json
-import uuid
 
 claims_bp = Blueprint('claims', __name__)
 
