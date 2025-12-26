@@ -80,8 +80,11 @@ def draft_claim_message(current_user):
         import google.generativeai as genai
         import os
         
-        # Use Env Var or Fallback to the key provided (Hardcoded for immediate demo success as requested)
-        api_key = os.getenv('GEMINI_API_KEY', "AIzaSyBILWRvtc3Gy97E2RHcVDBXOgdcAcA0oO8")
+        # Use Env Var
+        api_key = os.getenv('GEMINI_API_KEY')
+        if not api_key:
+             return jsonify({"error": "Server configuration error: GEMINI_API_KEY not set"}), 500
+        
         genai.configure(api_key=api_key)
         
         model = genai.GenerativeModel('gemini-2.0-flash')
@@ -112,7 +115,8 @@ def draft_claim_message(current_user):
         
     except Exception as e:
         print(f"Gemini Draft Error: {e}")
-        return jsonify({"error": "Failed to draft message"}), 500
+        # Return the actual error for debugging
+        return jsonify({"error": f"Failed to draft message: {str(e)}"}), 500
 
 @claims_bp.route('/item/<int:item_id>', methods=['GET'])
 @token_required
