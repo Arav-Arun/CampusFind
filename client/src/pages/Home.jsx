@@ -14,7 +14,6 @@ import {
   HelpCircle,
 } from "lucide-react";
 import Button from "../components/Button";
-import { motion } from "framer-motion";
 
 const CATEGORIES = [
   { name: "Keys", icon: Key },
