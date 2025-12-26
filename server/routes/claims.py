@@ -86,7 +86,9 @@ def get_claims_for_item(current_user, item_id):
                 },
                 "message": c.message,
                 "status": c.status,
-                "timestamp": c.timestamp.isoformat()
+                "timestamp": c.timestamp.isoformat(),
+                "meeting_time": c.meeting_time.isoformat() if c.meeting_time else None,
+                "meeting_location": c.meeting_location
             })
         return jsonify(result), 200
         
