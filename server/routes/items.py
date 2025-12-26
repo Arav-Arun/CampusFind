@@ -139,14 +139,16 @@ def create_item():
             except Exception as vq_e:
                 print(f"DEBUG: VQ Gen Failed: {vq_e}")
         
-        # Gamification: Award 5 Points for Reporting
-        try:
-            from models import User
-            user = User.query.get(user_id)
-            if user:
-                user.trust_score = getattr(user, 'trust_score', 0) + 5
-        except Exception as xp_e:
-            print(f"XP Update Failed: {xp_e}")
+        # Gamification: Award 5 Points for Reporting (ONLY for FOUND items)
+        # We reward people for helping others, not for losing things!
+        if new_item.type == 'found':
+            try:
+                from models import User
+                user = User.query.get(user_id)
+                if user:
+                    user.trust_score = getattr(user, 'trust_score', 0) + 5
+            except Exception as xp_e:
+                print(f"XP Update Failed: {xp_e}")
 
         db.session.add(new_item)
         db.session.commit()

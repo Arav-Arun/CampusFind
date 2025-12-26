@@ -31,13 +31,24 @@ const Stats = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // 1. Lost vs Found
+  // 1. Lost vs Found (Active vs Total)
+  const activeLostCount = items.filter(
+    (i) => i.type === "lost" && i.status === "unresolved"
+  ).length;
+  const activeFoundCount = items.filter(
+    (i) => i.type === "found" && i.status === "unresolved"
+  ).length;
+
+  // Chart Data: Keep historical distribution or switch to active?
+  // User asked for consistency with "what matches website", so let's stick to showing status clearly.
+  // Actually for the "Type" chart, let's keep showing Total distribution because that's interesting info (what gets lost more).
   const lostCount = items.filter((i) => i.type === "lost").length;
   const foundCount = items.filter((i) => i.type === "found").length;
+
   const typeData = [
     ["Type", "Count"],
-    ["Lost Items", lostCount],
-    ["Found Items", foundCount],
+    ["Lost Reports", lostCount],
+    ["Found Reports", foundCount],
   ];
 
   // 2. Status Distribution
@@ -54,7 +65,7 @@ const Stats = () => {
     ["Still Missing", unresolvedCount],
   ];
 
-  // 3. Category Distribution
+  // ... (rest of categories) ...
   const categoryMap = {};
   items.forEach((item) => {
     const cat = item.category || "Uncategorized";
@@ -62,14 +73,12 @@ const Stats = () => {
   });
   const categoryData = [["Category", "Count"], ...Object.entries(categoryMap)];
 
-  // 4. Location Hotspots
+  // ... (rest of location) ...
   const locationMap = {};
   items.forEach((item) => {
-    // Simple normalization
     const loc = (item.location || "Unknown").split(",")[0].trim();
     locationMap[loc] = (locationMap[loc] || 0) + 1;
   });
-  // Sort by count and take top 5
   const locationData = [
     ["Location", "Count"],
     ...Object.entries(locationMap)
@@ -77,7 +86,7 @@ const Stats = () => {
       .slice(0, 5),
   ];
 
-  // Chart Options for Dark Theme
+  // ... (chart options) ...
   const commonOptions = {
     backgroundColor: "transparent",
     legend: {
@@ -132,7 +141,7 @@ const Stats = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           <div className="glass-card p-4 md:p-6 rounded-2xl border border-white/5 flex flex-col items-center justify-center">
             <span className="text-muted text-xs md:text-sm uppercase tracking-widest font-bold text-center">
-              Total Items
+              Total Reports
             </span>
             <span className="text-2xl md:text-4xl font-bold mt-2 text-white">
               {items.length}
@@ -140,18 +149,18 @@ const Stats = () => {
           </div>
           <div className="glass-card p-4 md:p-6 rounded-2xl border border-white/5 flex flex-col items-center justify-center">
             <span className="text-muted text-xs md:text-sm uppercase tracking-widest font-bold text-center">
-              Lost
+              Active Lost
             </span>
             <span className="text-2xl md:text-4xl font-bold mt-2 text-red-400">
-              {lostCount}
+              {activeLostCount}
             </span>
           </div>
           <div className="glass-card p-4 md:p-6 rounded-2xl border border-white/5 flex flex-col items-center justify-center">
             <span className="text-muted text-xs md:text-sm uppercase tracking-widest font-bold text-center">
-              Found
+              Active Found
             </span>
             <span className="text-2xl md:text-4xl font-bold mt-2 text-green-400">
-              {foundCount}
+              {activeFoundCount}
             </span>
           </div>
           <div className="glass-card p-4 md:p-6 rounded-2xl border border-white/5 flex flex-col items-center justify-center">
