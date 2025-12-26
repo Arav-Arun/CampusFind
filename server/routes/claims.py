@@ -60,6 +60,61 @@ def create_claim(current_user):
     
     return jsonify({"message": "Claim submitted successfully", "claim_id": claim.id}), 201
 
+@claims_bp.route('/draft_message', methods=['POST'])
+@token_required
+def draft_claim_message(current_user):
+    """
+    ✨ Uses Google Gemini 2.0 Flash to draft a polite claim message.
+    """
+    try:
+        data = request.get_json()
+        item_id = data.get('item_id')
+        
+        if not item_id:
+             return jsonify({"error": "Item ID required"}), 400
+             
+        item = Item.query.get(item_id)
+        if not item:
+            return jsonify({"error": "Item not found"}), 404
+            
+        # Configure Gemini
+        import google.generativeai as genai
+        import os
+        
+        # Use Env Var or Fallback to the key provided (Hardcoded for immediate demo success as requested)
+        api_key = os.getenv('GEMINI_API_KEY', "AIzaSyBILWRvtc3Gy97E2RHcVDBXOgdcAcA0oO8")
+        genai.configure(api_key=api_key)
+        
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        
+        prompt = f"""
+        You are an AI assistant for a Lost & Found app.
+        Write a short, polite, and professional message from {current_user.name} to the person who found their item.
+        
+        Item Description: {item.description}
+        Item Category: {item.category}
+        Location Found: {item.location}
+        
+        The message should:
+        1. Confirm this is the item they lost.
+        2. Politely ask to arrange a meetup.
+        3. Be under 50 words.
+        4. Do NOT include placeholders like [Your Name], use the name provided.
+        """
+        
+        response = model.generate_content(prompt)
+        draft_text = response.text.strip()
+        
+        # Cleanup quotes if Gemini adds them
+        if draft_text.startswith('"') and draft_text.endswith('"'):
+            draft_text = draft_text[1:-1]
+            
+        return jsonify({"draft": draft_text}), 200
+        
+    except Exception as e:
+        print(f"Gemini Draft Error: {e}")
+        return jsonify({"error": "Failed to draft message"}), 500
+
 @claims_bp.route('/item/<int:item_id>', methods=['GET'])
 @token_required
 def get_claims_for_item(current_user, item_id):

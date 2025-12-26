@@ -31,6 +31,7 @@ const ItemDetail = () => {
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [claimMessage, setClaimMessage] = useState("");
   const [submittingClaim, setSubmittingClaim] = useState(false);
+  const [isDrafting, setIsDrafting] = useState(false);
 
   // Accept Modal State
   const [selectedClaimId, setSelectedClaimId] = useState(null);
@@ -112,6 +113,20 @@ const ItemDetail = () => {
       );
     } finally {
       setSubmittingClaim(false);
+    }
+  };
+
+  const handleDraftMessage = async () => {
+    setIsDrafting(true);
+    try {
+      const res = await api.post("/claims/draft_message", { item_id: id });
+      setClaimMessage(res.data.draft);
+    } catch (e) {
+      alert(
+        "Failed to draft message: " + (e.response?.data?.error || e.message)
+      );
+    } finally {
+      setIsDrafting(false);
     }
   };
 
@@ -620,6 +635,20 @@ const ItemDetail = () => {
               <h2 className="text-xl font-bold mb-4">
                 {item.type === "found" ? "Claim Ownership" : "Report Finding"}
               </h2>
+              <div className="flex justify-end mb-2">
+                <button
+                  type="button"
+                  onClick={handleDraftMessage}
+                  disabled={isDrafting}
+                  className="text-xs bg-purple-500/10 text-purple-400 border border-purple-500/50 px-3 py-1 rounded-full flex items-center gap-1 hover:bg-purple-500/20 transition-colors"
+                >
+                  <Sparkles
+                    size={12}
+                    className={isDrafting ? "animate-spin" : ""}
+                  />
+                  {isDrafting ? "Drafting..." : "Draft with AI"}
+                </button>
+              </div>
               <textarea
                 className="w-full bg-background border border-white/10 rounded-xl p-3 h-32 mb-4 focus:border-accent outline-none"
                 placeholder={

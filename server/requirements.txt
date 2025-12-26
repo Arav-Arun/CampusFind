@@ -9,3 +9,4 @@ PyJWT
 Pillow
 openai
 psycopg2-binary
+google-generativeai
