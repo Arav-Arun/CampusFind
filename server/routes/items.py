@@ -84,15 +84,15 @@ def generate_poster(item_id):
                     if img_url.lower().endswith(".png"): mime = "image/png"
                     image_src = f"data:{mime};base64,{b64_data}"
                 else:
-                    # Graceful fallback for 404/403/500
-                    print(f"Poster Image Fetch Failed: {response.status_code}")
-                    # Use a clean placeholder instead of showing the error code to the user
-                    image_src = "https://placehold.co/600x400?text=Image+Not+Found"
+                    # If server fetch fails, fall back to the raw URL
+                    # The user's browser might be able to reach it even if the server can't
+                    print(f"Poster Image Server Fetch Failed: {response.status_code}. Fallback to URL.")
+                    image_src = img_url
                     
             except Exception as e:
                 print(f"Poster Image Exception: {e}")
-                # Clean fallback
-                image_src = "https://placehold.co/600x400?text=Image+Not+Found"
+                # Fallback to URL
+                image_src = img_url
 
         # -------------------------
         # COOLER POSTER TEMPLATE
@@ -249,7 +249,7 @@ def generate_poster(item_id):
                     
                     <div class="content">
                         <div class="main-image-container">
-                            <img src="{image_src}" class="main-image" />
+                            <img src="{image_src}" class="main-image" onerror="this.src='https://placehold.co/600x400?text=Image+Not+Found'" />
                         </div>
 
                         <div class="info-grid">
