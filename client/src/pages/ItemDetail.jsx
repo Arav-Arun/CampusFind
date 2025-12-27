@@ -396,7 +396,8 @@ const ItemDetail = () => {
                         Claim Accepted!
                       </h4>
                       <p className="text-sm text-muted mb-3">
-                        Please verify the claimant by scanning their QR code.
+                        Please verify the claimant by entering their 6-digit
+                        verification code.
                       </p>
                       <Link to="/scan">
                         <Button variant="primary" className="w-full font-bold">
@@ -479,7 +480,8 @@ const ItemDetail = () => {
 
                           {claim.status === "completed" && (
                             <div className="mt-3 text-sm bg-blue-500/10 p-2 rounded text-blue-400 font-bold text-center">
-                              Claims Process Completed via QR Verification
+                              Claims Process Completed via 6-digit Code
+                              Verification
                             </div>
                           )}
                         </div>
