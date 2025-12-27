@@ -68,7 +68,11 @@ const Stats = () => {
   // ... (rest of categories) ...
   const categoryMap = {};
   items.forEach((item) => {
-    const cat = item.category || "Uncategorized";
+    let cat = item.category || "Uncategorized";
+    // Normalize to Title Case to merge "bottle", "Bottle", "BOTTLE"
+    cat = cat.trim();
+    cat = cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
+
     categoryMap[cat] = (categoryMap[cat] || 0) + 1;
   });
   const categoryData = [["Category", "Count"], ...Object.entries(categoryMap)];
