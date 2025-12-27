@@ -220,12 +220,7 @@ const ItemDetail = () => {
 
           <button
             onClick={() =>
-              window.open(
-                `${
-                  import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"
-                }/api/items/${item.id}/poster`,
-                "_blank"
-              )
+              window.open(`/api/items/${item.id}/poster`, "_blank")
             }
             className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all font-bold text-sm"
           >
