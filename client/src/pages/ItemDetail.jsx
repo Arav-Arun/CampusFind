@@ -13,6 +13,7 @@ import {
   XCircle,
   MessageCircle,
   RefreshCw,
+  Printer,
 } from "lucide-react";
 import Button from "../components/Button";
 import { useAuth } from "../context/AuthContext";
