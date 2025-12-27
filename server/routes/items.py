@@ -52,22 +52,37 @@ def generate_poster(item_id):
         date_str = item.date_lost.strftime('%B %d, %Y') if item.date_lost else "Unknown Date"
             
         # Image Handling: Fetch and Convert to Base64 to ensure it prints
+        # We start with a placeholder that indicates "Loading..." or "No Image"
         image_src = "https://placehold.co/600x400?text=No+Image+Available"
+        
         if item.image_url:
             try:
                 # Force HTTPS
                 img_url = item.image_url.replace("http://", "https://")
-                response = requests.get(img_url, timeout=5)
+                
+                # Add User-Agent to satisfy strict CDNs/Servers
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                }
+                
+                response = requests.get(img_url, headers=headers, timeout=10)
+                
                 if response.status_code == 200:
                     b64_data = base64.b64encode(response.content).decode('utf-8')
                     # Guess mime type (simple check)
                     mime = "image/jpeg"
                     if img_url.lower().endswith(".png"): mime = "image/png"
                     image_src = f"data:{mime};base64,{b64_data}"
+                else:
+                    # If fetch fails (e.g. 403/404), show status in placeholder for debugging
+                    print(f"Poster Image Fetch Failed: {response.status_code}")
+                    image_src = f"https://placehold.co/600x400?text=Error+{response.status_code}"
+                    
             except Exception as e:
-                print(f"Poster Image Fetch Error: {e}")
-                # Fallback to URL if fetch fails, though it might not print
-                image_src = item.image_url
+                print(f"Poster Image Exception: {e}")
+                # Show exception in placeholder for visible debugging
+                error_msg = str(e).split('(')[0].replace(" ", "+") # Simplify error for URL
+                image_src = f"https://placehold.co/600x400?text=Error:+{error_msg[:20]}..."
 
         # -------------------------
         # COOLER POSTER TEMPLATE
