@@ -106,11 +106,16 @@ const ItemDetail = () => {
       await api.post("/claims/", { item_id: id, message: claimMessage });
       setShowClaimModal(false);
       fetchClaims();
-      alert("Claim request sent!");
+      alert("✅ Claim request sent successfully! The owner will be notified.");
     } catch (e) {
-      alert(
-        "Failed to submit claim: " + (e.response?.data?.error || e.message)
-      );
+      if (e.response?.status === 401) {
+        alert("⚠️ Session Expired. Please Log Out and Log In again to submit.");
+      } else {
+        alert(
+          "❌ Failed to submit claim: " +
+            (e.response?.data?.message || e.response?.data?.error || e.message)
+        );
+      }
     } finally {
       setSubmittingClaim(false);
     }
@@ -122,9 +127,14 @@ const ItemDetail = () => {
       const res = await api.post("/claims/draft_message", { item_id: id });
       setClaimMessage(res.data.draft);
     } catch (e) {
-      alert(
-        "Failed to draft message: " + (e.response?.data?.error || e.message)
-      );
+      if (e.response?.status === 401) {
+        alert("⚠️ Session Expired. Please Log Out and Log In again.");
+      } else {
+        alert(
+          "❌ AI Drafting failed: " +
+            (e.response?.data?.message || e.response?.data?.error || e.message)
+        );
+      }
     } finally {
       setIsDrafting(false);
     }
@@ -151,7 +161,14 @@ const ItemDetail = () => {
       setShowAcceptModal(false);
       fetchClaims();
     } catch (e) {
-      alert("Action failed: " + (e.response?.data?.error || e.message));
+      if (e.response?.status === 401) {
+        alert("⚠️ Session Expired. Please Log Out and Log In again.");
+      } else {
+        alert(
+          "❌ Action failed: " +
+            (e.response?.data?.message || e.response?.data?.error || e.message)
+        );
+      }
     }
   };
 
