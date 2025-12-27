@@ -64,9 +64,12 @@ def generate_poster(item_id):
                 filename = ""
                 
                 # STEP 1: Classify - Is it Local or Remote?
-                if "localhost" in raw_url or "127.0.0.1" in raw_url:
+                if "cloudinary.com" in raw_url:
+                    # Explicitly mark Cloudinary as REMOTE, regardless of other checks
+                    is_local = False
+                    debug_info = "Detected Cloudinary URL"
+                elif "localhost" in raw_url or "127.0.0.1" in raw_url:
                     # Logic: http://localhost:5001/uploads/foo.jpg -> treated as local file "foo.jpg"
-                    # This fixes the deadlock where server tries to ping itself
                     is_local = True
                     filename = raw_url.split('/')[-1]
                     debug_info = f"Detected Localhost URL, extracted: {filename}"
@@ -76,7 +79,7 @@ def generate_poster(item_id):
                     filename = raw_url
                     debug_info = f"Detected Local Filename: {filename}"
                 else:
-                    # Logic: https://res.cloudinary.com/... -> Remote
+                    # Logic: Other Remote
                     is_local = False
                     debug_info = "Detected Remote URL"
 
@@ -279,6 +282,11 @@ def generate_poster(item_id):
             </style>
         </head>
         <body onload="window.print()">
+            <!-- TEMP VISUAL DEBUGGER -->
+            <div style="background:#000; color:#fff; padding:5px; font-size:10px; text-align:center;">
+                DEBUG URL: {item.image_url} | LOCAL: {is_local} | TYPE: {debug_info}
+            </div>
+
             <div class="page-bg">
                 <div class="card">
                     <div class="header">
