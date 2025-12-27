@@ -29,71 +29,194 @@ def generate_poster(item_id):
     try:
         item = Item.query.get_or_404(item_id)
         
-        # QR Code that links to the item on the live site
-        base_url = request.host_url.replace("5000", "5173") # Hacky local dev fix
-        if "vercel.app" in request.url_root:
-            base_url = "https://campus-find.vercel.app" 
+        # Determine Base URL
+        # Priority: Vercel Env > Request Host (Backend)
+        # Note: We want the FRONTEND URL for the QR Code
+        base_url = "https://campus-find.vercel.app" # Default Production
         
+        if os.getenv("VERCEL_URL"):
+             base_url = f"https://{os.getenv('VERCEL_URL')}"
+        elif request.host_url.startswith("http://127.0.0.1") or request.host_url.startswith("http://localhost"):
+             base_url = "http://localhost:5173" # Default Vite Localhost
+
         item_url = f"{base_url}/item/{item.id}"
-        qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={item_url}"
+        
+        # QR Code API (GoQR is reliable)
+        qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=400x400&data={item_url}"
 
         # Safe Date Handling
-        date_str = "N/A"
+        date_str = "Unknown Date"
         if item.date_lost:
             date_str = item.date_lost.strftime('%B %d, %Y')
+            
+        # Safe Image Handling
+        image_src = item.image_url
+        if not image_src:
+            # Fallback placeholder if no image
+            image_src = "https://placehold.co/600x400?text=No+Image+Available"
 
-        # Simple HTML Template
+        # -------------------------
+        # MODERN POSTER TEMPLATE
+        # -------------------------
         html = f"""
         <!DOCTYPE html>
         <html>
         <head>
-            <title>MISSING ITEM POSTER</title>
+            <title>{item.type.upper()} ITEM - {item.description}</title>
             <style>
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-                body {{ font-family: 'Inter', sans-serif; text-align: center; padding: 20px; color: black; }}
-                .header {{ font-size: 80px; font-weight: 900; color: #d00; text-transform: uppercase; margin-bottom: 20px; }}
-                .sub-header {{ font-size: 30px; font-weight: 700; margin-bottom: 30px; }}
-                .image-container {{ width: 100%; max-height: 500px; overflow: hidden; margin-bottom: 30px; border: 5px solid black; }}
-                .item-image {{ width: 100%; object-fit: contain; max-height: 500px; }}
-                .details {{ text-align: left; margin: 0 auto; width: 80%; font-size: 24px; line-height: 1.5; }}
-                .label {{ font-weight: bold; color: #555; }}
-                .qr-section {{ margin-top: 40px; display: flex; align-items: center; justify-content: center; gap: 20px; }}
-                .qr-text {{ font-size: 20px; font-weight: bold; max-width: 200px; text-align: left; }}
-                .footer {{ margin-top: 50px; font-size: 14px; color: #888; }}
+                @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Inter:wght@400;600&display=swap');
                 
+                :root {{
+                    --primary: {'#ef4444' if item.type == 'lost' else '#22c55e'}; /* Red for Lost, Green for Found */
+                    --text: #1f2937;
+                }}
+
+                body {{ 
+                    font-family: 'Inter', sans-serif; 
+                    margin: 0; 
+                    padding: 0;
+                    color: var(--text);
+                    text-align: center;
+                    background: white;
+                }}
+
+                .page-container {{
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 40px;
+                    border: 0px solid black; /* No border for print */
+                }}
+
+                /* HUGE HEADER */
+                .header-banner {{
+                    background: var(--primary);
+                    color: white;
+                    font-family: 'Oswald', sans-serif;
+                    font-size: 8rem;
+                    line-height: 1;
+                    padding: 20px 0;
+                    text-transform: uppercase;
+                    letter-spacing: 5px;
+                    margin-bottom: 20px;
+                    -webkit-print-color-adjust: exact;
+                }}
+
+                .item-title {{
+                    font-size: 3rem;
+                    font-weight: 700;
+                    margin: 20px 0;
+                    text-transform: uppercase;
+                    line-height: 1.2;
+                }}
+
+                /* IMAGE BOX */
+                .image-box {{
+                    width: 100%;
+                    height: 500px;
+                    background: #f3f4f6;
+                    border: 4px solid black;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden;
+                    margin-bottom: 30px;
+                }}
+                
+                .item-img {{
+                    width: 100%;
+                    height: 100%;
+                    object-fit: contain;
+                }}
+
+                /* DETAILS */
+                .details-grid {{
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 20px;
+                    text-align: left;
+                    font-size: 1.5rem;
+                    margin-bottom: 40px;
+                    border-top: 2px solid #ddd;
+                    border-bottom: 2px solid #ddd;
+                    padding: 20px 0;
+                }}
+
+                .detail-row {{ margin-bottom: 10px; }}
+                .label {{ font-weight: 700; color: #555; }}
+
+                /* QR SECTION */
+                .call-to-action {{
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 30px;
+                    background: #f9fafb;
+                    padding: 30px;
+                    border-radius: 20px;
+                    border: 2px dashed #ccc;
+                }}
+
+                .qr-img {{ width: 180px; height: 180px; mix-blend-mode: multiply; }}
+                
+                .cta-text {{
+                    text-align: left;
+                }}
+                
+                .cta-main {{ font-size: 2rem; font-weight: 900; line-height: 1.1; margin-bottom: 10px; }}
+                .cta-sub {{ font-size: 1.2rem; color: #666; }}
+
+                .footer {{
+                    margin-top: 50px;
+                    font-size: 0.9rem;
+                    color: #999;
+                }}
+
+                /* PRINT RESET */
                 @media print {{
                     @page {{ margin: 0.5cm; }}
                     body {{ -webkit-print-color-adjust: exact; }}
-                    .no-print {{ display: none; }}
+                    .page-container {{ width: 100%; max-width: none; padding: 0; }}
+                    .header-banner {{ font-size: 6rem; }} /* Slightly smaller for fit */
                 }}
             </style>
         </head>
-        <body onload="window.print()">
-            <div class="header" style="color: {'#d00' if item.type == 'lost' else '#0a0'}">
+        <body onload="setTimeout(() => window.print(), 1000)"> <!-- Timeout allows image to load -->
+            
+            <div class="header-banner">
                 {item.type}
             </div>
-            <div class="sub-header">{item.description}</div>
-            
-            <div class="image-container">
-                <img src="{item.image_url}" class="item-image" />
-            </div>
-            
-            <div class="details">
-                <p><span class="label">📅 Date:</span> {date_str}</p>
-                <p><span class="label">📍 Location:</span> {item.location}</p>
-                <p><span class="label">🎨 Color:</span> {item.color or 'N/A'}</p>
-                <p><span class="label">🏷️ Category:</span> {item.category or 'Uncategorized'}</p>
-            </div>
-            
-            <div class="qr-section">
-                <img src="{qr_url}" width="150" height="150" />
-                <div class="qr-text">
-                    SCAN TO SEE DETAILS & CONTACT OWNER
+
+            <div class="page-container">
+                <div class="item-title">
+                    {item.description}
                 </div>
-            </div>
-            
-            <div class="footer">
-                Generated by CampusFind • Safe & Secure Lost & Found
+                
+                <div class="image-box">
+                    <img src="{image_src}" class="item-img" onerror="this.src='https://placehold.co/600x400?text=Image+Not+Found'"/>
+                </div>
+
+                <div class="details-grid">
+                    <div>
+                        <div class="detail-row"><span class="label">📅 DATE:</span> {date_str}</div>
+                        <div class="detail-row"><span class="label">📍 LOCATION:</span> {item.location}</div>
+                    </div>
+                    <div>
+                        <div class="detail-row"><span class="label">🎨 COLOR:</span> {item.color or 'N/A'}</div>
+                        <div class="detail-row"><span class="label">🏷️ CATEGORY:</span> {item.category or 'N/A'}</div>
+                    </div>
+                </div>
+
+                <div class="call-to-action">
+                    <img src="{qr_url}" class="qr-img" />
+                    <div class="cta-text">
+                        <div class="cta-main">HAVE YOU SEEN THIS?</div>
+                        <div class="cta-sub">Scan to view details or contact the owner securely.</div>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    Generated by CampusFind • The Quickest Way to Find Lost Items on Campus
+                </div>
             </div>
         </body>
         </html>
@@ -103,7 +226,7 @@ def generate_poster(item_id):
         print(f"Poster Generation Error: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return f"<h3>Error generating poster: {str(e)}</h3>", 500
 
 # Cloudinary Configuration
 cloudinary.config(
