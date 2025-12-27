@@ -51,44 +51,87 @@ def generate_poster(item_id):
         # Safe Date
         date_str = item.date_lost.strftime('%B %d, %Y') if item.date_lost else "Unknown Date"
             
-        # Image Handling: Optimized Strategy
-        # 1. If Remote URL (Cloudinary): Let browser load it directly (Reliable, no server overhead)
-        # 2. If Local File (Legacy): Read from disk and embed Base64 (Fixes localhost print/deadlock issues)
-        
+        # ---------------------------------------------------------
+        # UNIVERSAL IMAGE HANDLER (The "Thorough Check")
+        # ---------------------------------------------------------
         image_src = "https://placehold.co/600x400?text=No+Image+Available"
+        debug_info = "Default Placeholder"
+        
         if item.image_url:
-            img_url = item.image_url
-            
-            # --- CASE 1: Local Legacy File ---
-            if not img_url.startswith("http"):
-                try:
-                    # Construct absolute path to uploads folder
-                    # server/routes/items.py -> server/routes -> server -> uploads
-                    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                    uploads_dir = os.path.join(base_dir, "uploads")
-                    file_path = os.path.join(uploads_dir, img_url)
+            try:
+                raw_url = item.image_url
+                is_local = False
+                filename = ""
+                
+                # STEP 1: Classify - Is it Local or Remote?
+                if "localhost" in raw_url or "127.0.0.1" in raw_url:
+                    # Logic: http://localhost:5001/uploads/foo.jpg -> treated as local file "foo.jpg"
+                    # This fixes the deadlock where server tries to ping itself
+                    is_local = True
+                    filename = raw_url.split('/')[-1]
+                    debug_info = f"Detected Localhost URL, extracted: {filename}"
+                elif not raw_url.startswith("http"):
+                    # Logic: "foo.jpg" -> treated as local file
+                    is_local = True
+                    filename = raw_url
+                    debug_info = f"Detected Local Filename: {filename}"
+                else:
+                    # Logic: https://res.cloudinary.com/... -> Remote
+                    is_local = False
+                    debug_info = "Detected Remote URL"
+
+                # STEP 2: Execute Retrieval
+                if is_local:
+                    # STRATEGY: Direct Disk Read (Reliable for Local)
+                    # Use Flask's root_path to find the real server directory
+                    from flask import current_app
+                    base_dir = current_app.root_path # e.g. /Users/.../server
+                    
+                    # Try Primary Path (server/uploads)
+                    file_path = os.path.join(base_dir, "uploads", filename)
+                    
+                    # Try Secondary Path (Vercel /tmp/uploads)
+                    if not os.path.exists(file_path):
+                        file_path = os.path.join("/tmp/uploads", filename)
                     
                     if os.path.exists(file_path):
                         with open(file_path, "rb") as img_file:
                             b64_data = base64.b64encode(img_file.read()).decode('utf-8')
-                            # Simple mime guess
-                            mime = "image/png" if img_url.lower().endswith(".png") else "image/jpeg"
+                            mime = "image/png" if filename.lower().endswith(".png") else "image/jpeg"
                             image_src = f"data:{mime};base64,{b64_data}"
+                            debug_info += " -> Loaded from Disk (Base64)"
                     else:
-                        print(f"Poster: Local file not found at {file_path}")
-                        image_src = "https://placehold.co/600x400?text=Image+File+Missing"
-                except Exception as e:
-                     print(f"Poster Local Read Error: {e}")
-                     image_src = "https://placehold.co/600x400?text=Image+Error"
+                        print(f"Poster DEBUG: File missing at {file_path}")
+                        image_src = "https://placehold.co/600x400?text=File+Deleted+From+Server"
+                        debug_info += " -> File Not Found on Disk"
 
-            # --- CASE 2: Remote URL (Cloudinary) ---
-            else:
-                # Use URL directly. The browser will fetch it.
-                # Ensure HTTPS
-                if img_url.startswith("http://") and "localhost" not in img_url:
-                    image_src = img_url.replace("http://", "https://")
                 else:
-                    image_src = img_url
+                    # STRATEGY: Remote Fetch (Reliable for Cloudinary)
+                    # We fetch server-side to avoid CORS/Print issues
+                    headers = {
+                        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36"
+                    }
+                    response = requests.get(raw_url, headers=headers, timeout=5)
+                    
+                    if response.status_code == 200:
+                        b64_data = base64.b64encode(response.content).decode('utf-8')
+                        mime = "image/png" if raw_url.lower().endswith(".png") else "image/jpeg"
+                        image_src = f"data:{mime};base64,{b64_data}"
+                        debug_info += " -> Fetched & Embedded (Base64)"
+                    else:
+                        # Fallback: Hotlink
+                        print(f"Poster DEBUG: Remote fetch failed {response.status_code}")
+                        image_src = raw_url
+                        debug_info += f" -> Fetch Failed ({response.status_code}), using Hotlink"
+
+            except Exception as e:
+                print(f"Poster CRITICAL ERROR: {e}")
+                import traceback
+                traceback.print_exc()
+                # If all else fails, show the error on the poster so we know WHY
+                error_clean = str(e).replace("'", "").replace('"', "")[:50]
+                image_src = f"https://placehold.co/600x400?text=Error:{error_clean}"
+                debug_info += f" -> Exception: {e}"
 
         # -------------------------
         # COOLER POSTER TEMPLATE
@@ -244,8 +287,9 @@ def generate_poster(item_id):
                     </div>
                     
                     <div class="content">
+                        <!-- DEBUG: {debug_info} -->
                         <div class="main-image-container">
-                            <img src="{image_src}" class="main-image" onerror="this.src='https://placehold.co/600x400?text=Image+Not+Found'" />
+                            <img src="{image_src}" class="main-image" />
                         </div>
 
                         <div class="info-grid">
