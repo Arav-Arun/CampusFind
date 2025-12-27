@@ -144,7 +144,9 @@ const Upload = () => {
       navigate("/");
     } catch (error) {
       console.error("Upload failed", error);
-      alert("Upload failed. See console.");
+      const errMsg =
+        error.response?.data?.error || "Upload failed. See console.";
+      alert(`Error: ${errMsg}`);
     } finally {
       setLoading(false);
     }
