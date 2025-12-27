@@ -30,18 +30,24 @@ def generate_poster(item_id):
         item = Item.query.get_or_404(item_id)
         
         # Determine Base URL
-        # Priority: Vercel Env > Request Host (Backend)
-        # Note: We want the FRONTEND URL for the QR Code
-        base_url = "https://campus-find.vercel.app" # Default Production
-        
-        if os.getenv("VERCEL_URL"):
+        # Priority: Referer (User's browser) > Vercel Env > Request Host
+        # Using Referer is best because it guarantees we send them back to the exact domain they came from
+        referer = request.headers.get("Referer")
+        if referer:
+            # Extract root (https://my-app.vercel.app) from Referer (https://my-app.vercel.app/item/1)
+            from urllib.parse import urlparse
+            parsed = urlparse(referer)
+            base_url = f"{parsed.scheme}://{parsed.netloc}"
+        elif os.getenv("VERCEL_URL"):
              base_url = f"https://{os.getenv('VERCEL_URL')}"
         elif request.host_url.startswith("http://127.0.0.1") or request.host_url.startswith("http://localhost"):
              base_url = "http://localhost:5173" # Default Vite Localhost
+        else:
+             base_url = "https://campus-find.vercel.app" 
 
         item_url = f"{base_url}/item/{item.id}"
         
-        # QR Code API (GoQR is reliable)
+        # QR Code API
         qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=400x400&data={item_url}"
 
         # Safe Date Handling
@@ -52,8 +58,11 @@ def generate_poster(item_id):
         # Safe Image Handling
         image_src = item.image_url
         if not image_src:
-            # Fallback placeholder if no image
             image_src = "https://placehold.co/600x400?text=No+Image+Available"
+        
+        # Ensure image is HTTPS to avoid mixed content issues
+        if image_src and image_src.startswith("http://"):
+            image_src = image_src.replace("http://", "https://")
 
         # -------------------------
         # MODERN POSTER TEMPLATE
@@ -180,7 +189,7 @@ def generate_poster(item_id):
                 }}
             </style>
         </head>
-        <body onload="setTimeout(() => window.print(), 1000)"> <!-- Timeout allows image to load -->
+        <body onload="setTimeout(() => window.print(), 2500)"> <!-- Timeout allows image to load -->
             
             <div class="header-banner">
                 {item.type}
