@@ -669,8 +669,12 @@ const ItemDetail = () => {
                       });
                       setClaimMessage(res.data.message);
                     } catch (e) {
-                      console.error(e);
-                      setClaimMessage("Error drafting message.");
+                      console.error("Gemini Error:", e);
+                      const errMsg =
+                        e.response?.data?.error || e.message || "Unknown Error";
+                      setClaimMessage(`Error: ${errMsg}`);
+                      // Optional: Alert the user too so they see it
+                      alert(`Gemini Error: ${errMsg}`);
                     }
                   }}
                   className="text-xs flex items-center gap-1 text-accent hover:text-white transition-colors font-bold"
