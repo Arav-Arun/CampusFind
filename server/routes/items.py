@@ -14,6 +14,7 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 import cloudinary
 import cloudinary.uploader
+from routes.auth import SECRET_KEY
 
 items_bp = Blueprint("items", __name__)
 
@@ -120,8 +121,6 @@ def create_item():
             return jsonify({"error": "Unauthorized: Missing or invalid token"}), 401
 
         try:
-
-            SECRET_KEY = os.getenv("SECRET_KEY", "dev_secret_key_change_me")
             token_str = token.split(" ")[1]
             data = jwt.decode(token_str, SECRET_KEY, algorithms=["HS256"])
             user_id = data["user_id"]
@@ -280,7 +279,6 @@ def get_my_items():
 
         # from models import Claim # Imported at top level now
 
-        SECRET_KEY = os.getenv("SECRET_KEY", "dev_secret_key_change_me")
         token = token.split(" ")[1]
         data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         user_id = data["user_id"]
