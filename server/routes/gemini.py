@@ -5,11 +5,11 @@ from flask import Blueprint, request, jsonify
 gemini_bp = Blueprint('gemini_bp', __name__)
 
 # Configure Gemini
-api_key = os.getenv('GOOGLE_API_KEY')
+api_key = os.getenv('GEMINI_API_KEY')
 if api_key:
     genai.configure(api_key=api_key)
 else:
-    print("WARNING: GOOGLE_API_KEY not found. Gemini features will fail.")
+    print("WARNING: GEMINI_API_KEY not found. Gemini features will fail.")
 
 @gemini_bp.route('/draft-message', methods=['POST'])
 def draft_message():
