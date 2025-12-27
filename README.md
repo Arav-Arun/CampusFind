@@ -96,14 +96,6 @@ npm run dev
 
 ---
 
-## 📸 Screenshots
-
-| AI Auto-Tagging | Magic Wand Drafting  | Mobile Dashboard |
-| :-------------: | :------------------: | :--------------: |
-| _Vision Agents_ | _Gemini 2.0 at work_ |  _Clean & Fast_  |
-
----
-
 ## 🤝 Contribution
 
 Built with ❤️ for **GDG Hackathon 2025**.
