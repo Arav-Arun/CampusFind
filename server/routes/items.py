@@ -51,48 +51,44 @@ def generate_poster(item_id):
         # Safe Date
         date_str = item.date_lost.strftime('%B %d, %Y') if item.date_lost else "Unknown Date"
             
-        # Image Handling: Fetch and Convert to Base64 to ensure it prints
-        # We start with a placeholder that indicates "Loading..." or "No Image"
-        image_src = "https://placehold.co/600x400?text=No+Image+Available"
+        # Image Handling: Optimized Strategy
+        # 1. If Remote URL (Cloudinary): Let browser load it directly (Reliable, no server overhead)
+        # 2. If Local File (Legacy): Read from disk and embed Base64 (Fixes localhost print/deadlock issues)
         
+        image_src = "https://placehold.co/600x400?text=No+Image+Available"
         if item.image_url:
-            try:
-                img_url = item.image_url
-                
-                # Check if it's a legacy local filename (not a URL)
-                if not img_url.startswith("http"):
-                    # It's a filename like "202512271230_shoe.jpg"
-                    # We need to construct a full URL to fetch it from our own server
-                    # Use the base_url we determined earlier
-                    img_url = f"{base_url}/uploads/{img_url}"
-                
-                # Force HTTPS for external URLs
-                elif img_url.startswith("http://") and "localhost" not in img_url:
-                     img_url = img_url.replace("http://", "https://")
-                
-                # Add User-Agent to satisfy strict CDNs/Servers
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-                }
-                
-                response = requests.get(img_url, headers=headers, timeout=10)
-                
-                if response.status_code == 200:
-                    b64_data = base64.b64encode(response.content).decode('utf-8')
-                    # Guess mime type (simple check)
-                    mime = "image/jpeg"
-                    if img_url.lower().endswith(".png"): mime = "image/png"
-                    image_src = f"data:{mime};base64,{b64_data}"
-                else:
-                    # If server fetch fails, fall back to the raw URL
-                    # The user's browser might be able to reach it even if the server can't
-                    print(f"Poster Image Server Fetch Failed: {response.status_code}. Fallback to URL.")
-                    image_src = img_url
+            img_url = item.image_url
+            
+            # --- CASE 1: Local Legacy File ---
+            if not img_url.startswith("http"):
+                try:
+                    # Construct absolute path to uploads folder
+                    # server/routes/items.py -> server/routes -> server -> uploads
+                    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    uploads_dir = os.path.join(base_dir, "uploads")
+                    file_path = os.path.join(uploads_dir, img_url)
                     
-            except Exception as e:
-                print(f"Poster Image Exception: {e}")
-                # Fallback to URL
-                image_src = img_url
+                    if os.path.exists(file_path):
+                        with open(file_path, "rb") as img_file:
+                            b64_data = base64.b64encode(img_file.read()).decode('utf-8')
+                            # Simple mime guess
+                            mime = "image/png" if img_url.lower().endswith(".png") else "image/jpeg"
+                            image_src = f"data:{mime};base64,{b64_data}"
+                    else:
+                        print(f"Poster: Local file not found at {file_path}")
+                        image_src = "https://placehold.co/600x400?text=Image+File+Missing"
+                except Exception as e:
+                     print(f"Poster Local Read Error: {e}")
+                     image_src = "https://placehold.co/600x400?text=Image+Error"
+
+            # --- CASE 2: Remote URL (Cloudinary) ---
+            else:
+                # Use URL directly. The browser will fetch it.
+                # Ensure HTTPS
+                if img_url.startswith("http://") and "localhost" not in img_url:
+                    image_src = img_url.replace("http://", "https://")
+                else:
+                    image_src = img_url
 
         # -------------------------
         # COOLER POSTER TEMPLATE
