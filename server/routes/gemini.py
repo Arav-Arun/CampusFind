@@ -18,8 +18,8 @@ def get_gemini_model():
 
     try:
         genai.configure(api_key=api_key)
-        # Use 'gemini-1.5-flash' as requested, fallback to 'gemini-pro' if needed in future
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Use 'gemini-2.0-flash' as it is available and supported
+        model = genai.GenerativeModel('gemini-2.0-flash')
         return model, None
     except Exception as e:
         print(f"CRITICAL: Failed to configure Gemini: {e}")
