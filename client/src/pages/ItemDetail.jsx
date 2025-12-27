@@ -302,7 +302,7 @@ const ItemDetail = () => {
               <div className="p-4 bg-background/50 rounded-xl border border-white/5">
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="font-semibold flex items-center gap-2">
-                    <Tag size={18} className="text-accent" /> Analysis by Gemini
+                    <Tag size={18} className="text-accent" /> AI Analysis
                   </h3>
                   {isOwner && (
                     <button
@@ -592,7 +592,7 @@ const ItemDetail = () => {
         {/* MATCHES */}
         <div className="mt-10">
           <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <Sparkles className="text-accent" /> Gemini AI Matches
+            <Sparkles className="text-accent" /> AI Matches
           </h2>
           {loadingMatches ? (
             <div className="text-center py-10 text-muted border border-white/5 rounded-xl">
