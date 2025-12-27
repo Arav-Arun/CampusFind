@@ -1,5 +1,8 @@
 from flask import Blueprint, request, jsonify
 from models import Item, Claim, User, db
+from flask import current_app
+import requests
+import base64
 from ai_models.ai_service import (
     analyze_image,
     generate_verification_question,
@@ -27,9 +30,9 @@ def generate_poster(item_id):
     Generates a printable HTML poster for a Lost or Found item.
     """
     try:
-        import requests
-        import base64
-
+    Generates a printable HTML poster for a Lost or Found item.
+    """
+    try:
         item = Item.query.get_or_404(item_id)
         
         # Determine Base URL

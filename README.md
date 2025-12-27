@@ -17,6 +17,11 @@ Plus, with **Trust Scores** and **Push Notifications**, we make returning items 
 - **Auto-Tagging**: Upload an image, and our AI (GPT-4o Mini) instantly identifies the category, color, brand, and distinctive features. No more manual data entry.
 - **Smart Matching**: The "Flagship Feature". Advanced vision algorithms compare visual and textual features to automatically match Lost items with Found candidates.
 
+### ✨ Gemini Integration (New!)
+
+- **Auto-Draft Claim Messages**: Struggling to find the right words? Our "Magic Wand" feature uses **Gemini 2.0 Flash** to draft polite, context-aware messages to the finder in seconds.
+- **Client-Side Poster Generation**: Generate printable "LOST" or "FOUND" posters directly in the browser with custom QR codes.
+
 ### 🔒 Secure Verification Flow
 
 1. **Claim Request**: Users claim an item they believe is theirs.
@@ -38,14 +43,14 @@ Plus, with **Trust Scores** and **Push Notifications**, we make returning items 
 
 ## 🛠️ Technology Stack
 
-| Component      | Tech                                                     |
-| -------------- | -------------------------------------------------------- |
-| **Frontend**   | React, Vite, Tailwind CSS, Framer Motion                 |
-| **Backend**    | Python Flask, SQLAlchemy                                 |
-| **Database**   | SQLite (Dev) / Postgres (Prod - Neon)                    |
-| **AI Engine**  | OpenAI GPT-4o Mini                                       |
-| **Auth & Ops** | Firebase Auth (Google Sign-In), Firebase Cloud Messaging |
-| **Analytics**  | Google Analytics 4, Google Charts                        |
+| Component      | Tech                                                       |
+| -------------- | ---------------------------------------------------------- |
+| **Frontend**   | React, Vite, Tailwind CSS, Framer Motion                   |
+| **Backend**    | Python Flask, SQLAlchemy                                   |
+| **Database**   | SQLite (Dev) / Postgres (Prod - Neon)                      |
+| **AI Engine**  | OpenAI GPT-4o (Vision) + Google Gemini 2.0 (Text/Drafting) |
+| **Auth & Ops** | Firebase Auth (Google Sign-In), Firebase Cloud Messaging   |
+| **Analytics**  | Google Analytics 4, Google Charts                          |
 
 ---
 

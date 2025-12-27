@@ -54,11 +54,13 @@ def draft_message():
 
     # List of models to try in order of preference
     # The user's key seems to have access to advanced/experimental models
+    # List of models to try in order of preference.
+    # We fallback to older/experimental models if the primary (2.0-flash) is rate-limited.
     candidate_models = [
-        'gemini-2.0-flash',        # Primary
+        'gemini-2.0-flash',        # Primary (Fastest, Smartest)
         'gemini-2.0-flash-exp',    # Fallback 1
-        'gemini-2.5-flash',        # Fallback 2 (Newer)
-        'gemini-2.0-flash-lite',   # Fallback 3 (Lighter)
+        'gemini-2.5-flash',        # Fallback 2 (Newer, might have different quota)
+        'gemini-2.0-flash-lite',   # Fallback 3 (Lighter, higher limits)
     ]
     
     last_error = None

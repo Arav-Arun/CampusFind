@@ -24,7 +24,8 @@ const Poster = () => {
   useEffect(() => {
     // Auto-trigger print when item is loaded and mostly rendered
     if (item) {
-      // Wait a bit for images to render
+      // Wait a bit for images to render before launching print dialog
+      // This prevents "blank image" issues in the print preview
       setTimeout(() => {
         window.print();
       }, 1500);
