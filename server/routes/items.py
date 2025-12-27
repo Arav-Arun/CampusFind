@@ -15,6 +15,8 @@ from werkzeug.utils import secure_filename
 import cloudinary
 import cloudinary.uploader
 from routes.auth import SECRET_KEY
+from PIL import Image
+import io
 
 items_bp = Blueprint("items", __name__)
 
@@ -50,7 +52,29 @@ def create_item():
         # Process Image for DB (Base64)
 
         file_content = file.read()
-        base64_data = base64.b64encode(file_content).decode("utf-8")
+        
+        # --- Image Compression ---
+        # Open image using Pillow
+        img = Image.open(io.BytesIO(file_content))
+        
+        # Convert to RGB (in case of RGBA/PNG)
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+            
+        # Resize if too large (Max dimension 1024px)
+        max_size = (1024, 1024)
+        img.thumbnail(max_size, Image.Resampling.LANCZOS)
+        
+        # Save to buffer with compression
+        compressed_buffer = io.BytesIO()
+        img.save(compressed_buffer, format="JPEG", quality=70, optimize=True)
+        compressed_buffer.seek(0)
+        
+        # Update file_content to use the compressed version
+        compressed_content = compressed_buffer.getvalue()
+        
+        # Generate Base64 for AI (using compressed image is fine and faster)
+        base64_data = base64.b64encode(compressed_content).decode("utf-8")
         mime_type = file.content_type or "image/jpeg"
         image_data_uri = f"data:{mime_type};base64,{base64_data}"
 
@@ -76,7 +100,12 @@ def create_item():
         try:
             print("DEBUG: Uploading to Cloudinary...")
             # We can upload the file_content (bytes) directly
-            upload_result = cloudinary.uploader.upload(file_content, folder="campusfind")
+            # Use compressed_content to save bandwidth/storage
+            upload_result = cloudinary.uploader.upload(
+                compressed_content, 
+                folder="campusfind",
+                resource_type="image"
+            )
             image_url = upload_result.get("secure_url")
             print(f"DEBUG: Cloudinary Upload Success: {image_url}")
         except Exception as e:
