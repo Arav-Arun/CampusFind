@@ -255,9 +255,27 @@ const Poster = () => {
         @media print {
             @page { margin: 0; size: auto; }
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .page-bg { min-height: 100%; padding: 0.5in; }
-            .card { box-shadow: none; border-width: 5px; }
-            .poster-body { height: 100vh; }
+            .poster-body { 
+                height: 100vh;
+                width: 100vw;
+                overflow: hidden;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .page-bg { 
+                height: 100%; 
+                width: 100%;
+                padding: 0.5in;
+                justify-content: center; /* Center vertically */
+            }
+            .card { 
+                box-shadow: none; 
+                border-width: 5px; 
+                transform: scale(0.95); /* Slight scale down to ensure fit */
+                transform-origin: center;
+            }
+            /* Start hidden elements for print cleanliness if needed */
         }
       `}</style>
     </div>
