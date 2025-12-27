@@ -57,8 +57,18 @@ def generate_poster(item_id):
         
         if item.image_url:
             try:
-                # Force HTTPS
-                img_url = item.image_url.replace("http://", "https://")
+                img_url = item.image_url
+                
+                # Check if it's a legacy local filename (not a URL)
+                if not img_url.startswith("http"):
+                    # It's a filename like "202512271230_shoe.jpg"
+                    # We need to construct a full URL to fetch it from our own server
+                    # Use the base_url we determined earlier
+                    img_url = f"{base_url}/uploads/{img_url}"
+                
+                # Force HTTPS for external URLs
+                elif img_url.startswith("http://") and "localhost" not in img_url:
+                     img_url = img_url.replace("http://", "https://")
                 
                 # Add User-Agent to satisfy strict CDNs/Servers
                 headers = {
