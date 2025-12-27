@@ -55,6 +55,9 @@ app.register_blueprint(items_bp, url_prefix='/api/items')
 app.register_blueprint(claims_bp, url_prefix='/api/claims')
 app.register_blueprint(auth_google_bp, url_prefix='/api/auth')
 
+from routes.gemini import gemini_bp
+app.register_blueprint(gemini_bp, url_prefix='/api/gemini')
+
 # --- Helper Routes ---
 
 from flask import send_from_directory, jsonify
