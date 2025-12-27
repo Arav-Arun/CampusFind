@@ -209,12 +209,28 @@ const ItemDetail = () => {
   return (
     <Layout>
       <div className="max-w-5xl mx-auto pb-20">
-        <Link to="/">
-          <Button variant="ghost" className="mb-4">
-            <ArrowLeft size={18} />
-            Back to Dashboard
-          </Button>
-        </Link>
+        <div className="flex justify-between items-center mb-4">
+          <Link to="/">
+            <Button variant="ghost">
+              <ArrowLeft size={18} />
+              Back to Dashboard
+            </Button>
+          </Link>
+
+          <button
+            onClick={() =>
+              window.open(
+                `${
+                  import.meta.env.VITE_API_URL || "http://127.0.0.1:5000"
+                }/items/${item.id}/poster`,
+                "_blank"
+              )
+            }
+            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all font-bold text-sm"
+          >
+            <Printer size={16} /> Print Flyer
+          </button>
+        </div>
 
         {/* SUCCESS MODAL */}
         {showSuccessModal && (
