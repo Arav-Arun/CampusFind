@@ -36,7 +36,7 @@ On bustling college campuses, losing personal belongings—IDs, wallets, headpho
 #### 🔒 3. Secure Verification Chain
 
 - **Closing the Loop**: Unlike social media posts, we track the _handover_.
-- **OTP Verification**: The system generates a unique **6-digit QR Code**. The item is only marked "Returned" when the finder scans the claimant's code at the meetup.
+- **OTP Verification**: The system generates a unique **6-digit code**. The item is only marked "Returned" when the finder scans the claimant's code at the meetup.
 
 #### 🎨 4. Client-Side Poster Gen
 
