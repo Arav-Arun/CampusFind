@@ -84,15 +84,15 @@ def generate_poster(item_id):
                     if img_url.lower().endswith(".png"): mime = "image/png"
                     image_src = f"data:{mime};base64,{b64_data}"
                 else:
-                    # If fetch fails (e.g. 403/404), show status in placeholder for debugging
+                    # Graceful fallback for 404/403/500
                     print(f"Poster Image Fetch Failed: {response.status_code}")
-                    image_src = f"https://placehold.co/600x400?text=Error+{response.status_code}"
+                    # Use a clean placeholder instead of showing the error code to the user
+                    image_src = "https://placehold.co/600x400?text=Image+Not+Found"
                     
             except Exception as e:
                 print(f"Poster Image Exception: {e}")
-                # Show exception in placeholder for visible debugging
-                error_msg = str(e).split('(')[0].replace(" ", "+") # Simplify error for URL
-                image_src = f"https://placehold.co/600x400?text=Error:+{error_msg[:20]}..."
+                # Clean fallback
+                image_src = "https://placehold.co/600x400?text=Image+Not+Found"
 
         # -------------------------
         # COOLER POSTER TEMPLATE
