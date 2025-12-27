@@ -64,69 +64,7 @@ def create_claim(current_user):
     )
 
 
-@claims_bp.route("/draft_message", methods=["POST"])
-@token_required
-def draft_claim_message(current_user):
-    """
-    ✨ Uses Google Gemini 2.0 Flash to draft a polite claim message.
-    """
-    try:
-        data = request.get_json()
-        item_id = data.get("item_id")
 
-        if not item_id:
-            return jsonify({"error": "Item ID required"}), 400
-
-        item = Item.query.get(item_id)
-        if not item:
-            return jsonify({"error": "Item not found"}), 404
-
-        # Configure Gemini
-        import google.generativeai as genai
-        import os
-
-        # Use Env Var
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            return (
-                jsonify(
-                    {"error": "Server configuration error: GEMINI_API_KEY not set"}
-                ),
-                500,
-            )
-
-        genai.configure(api_key=api_key)
-
-        model = genai.GenerativeModel("gemini-flash-latest")
-
-        prompt = f"""
-        You are an AI assistant for a Lost & Found app.
-        Write a short, polite, and professional message from {current_user.name} to the person who found their item.
-        
-        Item Description: {item.description}
-        Item Category: {item.category}
-        Location Found: {item.location}
-        
-        The message should:
-        1. Confirm this is the item they lost.
-        2. Politely ask to arrange a meetup.
-        3. Be under 50 words.
-        4. Do NOT include placeholders like [Your Name], use the name provided.
-        """
-
-        response = model.generate_content(prompt)
-        draft_text = response.text.strip()
-
-        # Cleanup quotes if Gemini adds them
-        if draft_text.startswith('"') and draft_text.endswith('"'):
-            draft_text = draft_text[1:-1]
-
-        return jsonify({"draft": draft_text}), 200
-
-    except Exception as e:
-        print(f"Gemini Draft Error: {e}")
-        # Return the actual error for debugging
-        return jsonify({"error": f"Failed to draft message: {str(e)}"}), 500
 
 
 @claims_bp.route("/item/<int:item_id>", methods=["GET"])

@@ -121,25 +121,6 @@ const ItemDetail = () => {
     }
   };
 
-  const handleDraftMessage = async () => {
-    setIsDrafting(true);
-    try {
-      const res = await api.post("/claims/draft_message", { item_id: id });
-      setClaimMessage(res.data.draft);
-    } catch (e) {
-      if (e.response?.status === 401) {
-        alert("⚠️ Session Expired. Please Log Out and Log In again.");
-      } else {
-        alert(
-          "❌ AI Drafting failed: " +
-            (e.response?.data?.message || e.response?.data?.error || e.message)
-        );
-      }
-    } finally {
-      setIsDrafting(false);
-    }
-  };
-
   const handleRespond = async (claimId, action) => {
     if (action === "accept" && !showAcceptModal) {
       setSelectedClaimId(claimId);
@@ -652,20 +633,7 @@ const ItemDetail = () => {
               <h2 className="text-xl font-bold mb-4">
                 {item.type === "found" ? "Claim Ownership" : "Report Finding"}
               </h2>
-              <div className="flex justify-end mb-2">
-                <button
-                  type="button"
-                  onClick={handleDraftMessage}
-                  disabled={isDrafting}
-                  className="text-xs bg-purple-500/10 text-purple-400 border border-purple-500/50 px-3 py-1 rounded-full flex items-center gap-1 hover:bg-purple-500/20 transition-colors"
-                >
-                  <Sparkles
-                    size={12}
-                    className={isDrafting ? "animate-spin" : ""}
-                  />
-                  {isDrafting ? "Drafting..." : "Draft with AI"}
-                </button>
-              </div>
+
               <textarea
                 className="w-full bg-background border border-white/10 rounded-xl p-3 h-32 mb-4 focus:border-accent outline-none"
                 placeholder={
