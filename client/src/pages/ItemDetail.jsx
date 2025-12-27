@@ -647,7 +647,7 @@ const ItemDetail = () => {
               </h2>
 
               <textarea
-                className="w-full bg-background border border-white/10 rounded-xl p-3 h-32 mb-4 focus:border-accent outline-none"
+                className="w-full bg-background border border-white/10 rounded-xl p-3 h-32 outline-none focus:border-accent"
                 placeholder={
                   item.type === "found"
                     ? "Describe proof of ownership (e.g., unique scratch, contents)..."
@@ -656,6 +656,29 @@ const ItemDetail = () => {
                 value={claimMessage}
                 onChange={(e) => setClaimMessage(e.target.value)}
               />
+
+              <div className="flex justify-end mb-4">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      setClaimMessage("✨ Gemini is thinking...");
+                      const res = await api.post("/gemini/draft-message", {
+                        item_type: item.type,
+                        item_desc: item.description,
+                      });
+                      setClaimMessage(res.data.message);
+                    } catch (e) {
+                      console.error(e);
+                      setClaimMessage("Error drafting message.");
+                    }
+                  }}
+                  className="text-xs flex items-center gap-1 text-accent hover:text-white transition-colors font-bold"
+                >
+                  <Sparkles size={12} /> Auto-Write with Gemini
+                </button>
+              </div>
+
               <div className="flex gap-3">
                 <Button
                   onClick={submitClaim}
