@@ -27,41 +27,63 @@ def get_gemini_model():
 
 @gemini_bp.route('/draft-message', methods=['POST'])
 def draft_message():
-    try:
-        data = request.get_json()
-        item_type = data.get('item_type', 'item')
-        item_desc = data.get('item_desc', 'this item')
-        
-        # Initialize on request (best for serverless/vercel)
-        model, error = get_gemini_model()
-        if error:
-            return jsonify({"error": error}), 500
+    data = request.get_json()
+    item_type = data.get('item_type', 'item')
+    item_desc = data.get('item_desc', 'this item')
+    
+    # Initialize on request
+    _, error = get_gemini_model() # Just checks key existence
+    if error:
+        return jsonify({"error": error}), 500
 
-        prompt = ""
-        if item_type == "found":
-            prompt = f"""
-            Write a polite, short message to someone who found a "{item_desc}".
-            I am the owner claiming it.
-            Keep it friendly, mention I can verify details, and ask to meet up.
-            Max 2 sentences. No emojis within the text, maybe one at end.
-            """
-        else:
-            prompt = f"""
-            Write a polite, short message to someone who lost a "{item_desc}".
-            I have found it.
-            Keep it reassuring, confirm I have it safe, and ask to meet up.
-            Max 2 sentences. No emojis within the text, maybe one at end.
-            """
+    prompt = ""
+    if item_type == "found":
+        prompt = f"""
+        Write a polite, short message to someone who found a "{item_desc}".
+        I am the owner claiming it.
+        Keep it friendly, mention I can verify details, and ask to meet up.
+        Max 2 sentences. No emojis within the text, maybe one at end.
+        """
+    else:
+        prompt = f"""
+        Write a polite, short message to someone who lost a "{item_desc}".
+        I have found it.
+        Keep it reassuring, confirm I have it safe, and ask to meet up.
+        Max 2 sentences. No emojis within the text, maybe one at end.
+        """
 
-        print(f"DEBUG: Generating content with Gemini 1.5 Flash for {item_desc}...")
-        response = model.generate_content(prompt)
-        
-        if not response.text:
-            return jsonify({"error": "Empty response from AI"}), 500
+    # List of models to try in order of preference
+    # The user's key seems to have access to advanced/experimental models
+    candidate_models = [
+        'gemini-2.0-flash',        # Primary
+        'gemini-2.0-flash-exp',    # Fallback 1
+        'gemini-2.5-flash',        # Fallback 2 (Newer)
+        'gemini-2.0-flash-lite',   # Fallback 3 (Lighter)
+    ]
+    
+    last_error = None
 
-        return jsonify({"message": response.text.strip()})
-        
-    except Exception as e:
-        print(f"Gemini Route Error: {e}")
-        # Return the actual error string to help debugging
-        return jsonify({"error": str(e)}), 500
+    print(f"DEBUG: Attempting to draft message for '{item_desc}'")
+
+    for model_name in candidate_models:
+        try:
+            print(f"DEBUG: Trying model '{model_name}'...")
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt)
+            
+            if response.text:
+                print(f"DEBUG: Success with '{model_name}'")
+                return jsonify({"message": response.text.strip(), "model_used": model_name})
+                
+        except Exception as e:
+            print(f"WARNING: Model '{model_name}' failed: {e}")
+            last_error = e
+            # Continue to next model
+            continue
+
+    # If all failed
+    error_msg = str(last_error)
+    if "429" in error_msg:
+        return jsonify({"error": "Gemini is busy (Rate Limit). Please try again in a minute."}), 429
+    
+    return jsonify({"error": f"All AI models failed. Last error: {error_msg}"}), 500
