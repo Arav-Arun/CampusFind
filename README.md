@@ -1,9 +1,5 @@
 # 🎓 CampusFind
 
-> **The AI-Powered Lost & Found Ecosystem for Modern Campuses.**  
-> _"Don't panic. Just snap, report, and recover."_
-
-[![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)](https://github.com/your-username/campusfind)
 [![Tech](https://img.shields.io/badge/Stack-MERN%20%2B%20Python-blue?style=for-the-badge)](https://react.dev)
 [![AI](https://img.shields.io/badge/AI-Gemini%20%2B%20GPT--4o-purple?style=for-the-badge)](https://deepmind.google/technologies/gemini/)
 
