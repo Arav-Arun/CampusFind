@@ -219,9 +219,7 @@ const ItemDetail = () => {
           </Link>
 
           <button
-            onClick={() =>
-              window.open(`/api/items/${item.id}/poster`, "_blank")
-            }
+            onClick={() => window.open(`/item/${item.id}/poster`, "_blank")}
             className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all font-bold text-sm"
           >
             <Printer size={16} /> Print Flyer

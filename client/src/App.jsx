@@ -17,6 +17,7 @@ import ItemDetail from "./pages/ItemDetail";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
+import Poster from "./pages/Poster";
 import { AuthProvider } from "./context/AuthContext";
 
 // Initialize GA4
@@ -48,6 +49,7 @@ function App() {
         <Route path="/upload" element={<Upload />} />
         <Route path="/my-activity" element={<MyActivity />} />
         <Route path="/item/:id" element={<ItemDetail />} />
+        <Route path="/item/:id/poster" element={<Poster />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/scan" element={<Scanner />} />
         <Route path="/stats" element={<Stats />} />
