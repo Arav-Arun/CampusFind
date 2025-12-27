@@ -12,8 +12,18 @@ import base64
 import jwt
 from datetime import datetime
 from werkzeug.utils import secure_filename
+import cloudinary
+import cloudinary.uploader
 
 items_bp = Blueprint("items", __name__)
+
+# Cloudinary Configuration
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True,
+)
 
 
 @items_bp.route("/", methods=["POST"])
@@ -21,7 +31,7 @@ def create_item():
     """
     Report a new Lost or Found item.
     - Uploads image
-    - Runs AI analysis (Gemini Vision) to auto-tag (category, color, etc.)
+    - Runs AI analysis (OpenAI Vision) to auto-tag (category, color, etc.)
     - Stores outcome in DB
     """
 
@@ -61,7 +71,16 @@ def create_item():
         with open(filepath, "wb") as f:
             f.write(file_content)
 
-        print(f"DEBUG: Saved to local storage: {filepath}")
+        # Cloudinary Upload
+        try:
+            print("DEBUG: Uploading to Cloudinary...")
+            # We can upload the file_content (bytes) directly
+            upload_result = cloudinary.uploader.upload(file_content, folder="campusfind")
+            image_url = upload_result.get("secure_url")
+            print(f"DEBUG: Cloudinary Upload Success: {image_url}")
+        except Exception as e:
+            print(f"ERROR: Cloudinary Upload Failed: {e}")
+            return jsonify({"error": f"Image upload failed: {str(e)}"}), 500
 
         # 2. AI Analysis (Auto-Tagging)
         print("DEBUG: Starting AI analysis...")
@@ -127,7 +146,7 @@ def create_item():
             location=data.get("location", "Unknown"),
             date_lost=datetime.utcnow(),
             image_url=filename,
-            image_data=image_data_uri,
+            image_data=image_url, # Store Cloudinary URL
             category=final_category,
             color=final_color,
             brand=final_brand,
