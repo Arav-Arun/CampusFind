@@ -1,11 +1,8 @@
 # 🎓 CampusFind
 
-<<<<<<< HEAD
-[![Tech](https://img.shields.io/badge/Stack-MERN%20%2B%20Python-blue?style=for-the-badge)](https://react.dev)
-[![AI](https://img.shields.io/badge/AI-Gemini%20%2B%20GPT--4o-purple?style=for-the-badge)](https://deepmind.google/technologies/gemini/)
-=======
+![CampusFind Banner](client/src/assets/banner.png)
 
-## ![CampusFind Banner](client/src/assets/banner.png)
+---
 
 ## The Problem :
 
@@ -104,7 +101,6 @@ cd ../client
 npm install
 npm run dev
 ```
-
 ---
 
 Built with ❤️ by team **Deploy for Good** for **TechSprint Hackathon 2025 by GDG KJSCE**.
