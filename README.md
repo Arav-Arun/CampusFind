@@ -1,51 +1,53 @@
 # 🎓 CampusFind
 
+<<<<<<< HEAD
 [![Tech](https://img.shields.io/badge/Stack-MERN%20%2B%20Python-blue?style=for-the-badge)](https://react.dev)
 [![AI](https://img.shields.io/badge/AI-Gemini%20%2B%20GPT--4o-purple?style=for-the-badge)](https://deepmind.google/technologies/gemini/)
+=======
 
----
+## ![CampusFind Banner](client/src/assets/banner.png)
 
-## 🚀 The Problem
+## The Problem :
 
-On bustling college campuses, losing personal belongings—IDs, wallets, headphones—is a daily chaos. Existing solutions are:
+On bustling college campuses, losing personal belongings like IDs, wallets, headphones is a daily chaos. Existing solutions are:
 
-- ❌ **Unorganized**: Scattered across spammy WhatsApp groups and physical notice boards.
-- ❌ **Unverified**: No way to know if a claim is legitimate.
-- ❌ **Awkward**: Coordinating meetups with strangers can be uncomfortable.
+- **Unorganized**: Scattered across spammy WhatsApp groups and physical notice boards.
+- **Unverified**: No way to know if a claim is legitimate.
+- **Awkward**: Coordinating meetups with strangers can be uncomfortable.
 
-## 💡 The Solution: CampusFind
+## The Solution: CampusFind
 
 **CampusFind** centralizes lost & found management into a secure, AI-driven platform. We replace chaos with a streamlined workflow: **Snap → Match → Verify → Recover**.
 
-### ✨ Key Features
+### Key Features :
 
-#### 🧠 1. AI Vision Agents (OpenAI GPT-4o)
+#### 1. AI Vision Agents (OpenAI GPT-4o)
 
 - **Snap & Go**: Upload a photo of a found item. Our vision agent instantly analyzes it to auto-tag **Brand**, **Color**, **Category**, and **Distinctive Features**.
 - **Proactive Matching**: The system doesn't just list items; it actively compares "Lost" reports against "Found" inventory using visual similarity algorithms.
 
-#### 🪄 2. "Magic Wand" Communication (Gemini 2.0 Flash)
+#### 2. "Magic Wand" Communication (Gemini 2.0 Flash)
 
 - **Auto-Draft Messages**: Social anxiety? Writers block? Click "Auto-Write" and let **Google Gemini** draft a polite, context-aware message to the owner/finder in milliseconds.
 - **Smart Context**: The AI understands if you are _claiming_ or _found_ an item and adjusts the tone accordingly.
 
-#### 🔒 3. Secure Verification Chain
+#### 3. Secure Verification Chain
 
 - **Closing the Loop**: Unlike social media posts, we track the _handover_.
 - **OTP Verification**: The system generates a unique **6-digit code**. The item is only marked "Returned" when the finder scans the claimant's code at the meetup.
 
-#### 🎨 4. Client-Side Poster Gen
+#### 4. Client-Side Poster Gen
 
 - **Instant Posters**: Need a physical flyer? Generate a beautifully designed, print-ready "LOST" poster with a custom QR code directly in your browser.
 
-#### ☁️ 5. Enterprise-Grade Scale
+#### 5. Enterprise-Grade Scale
 
-- **Cloudinary Integration**: Images are optimized and served via CDNs for lightning-fast loading.
+- **Cloudinary Integration**: Images are compressed and served via CDNs for lightning-fast loading.
 - **Neon Postgres**: Serverless database architecture ensures we scale from 100 to 100,000 students effortlessly.
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Used :
 
 | Layer         | Technologies                                                          |
 | :------------ | :-------------------------------------------------------------------- |
@@ -53,12 +55,25 @@ On bustling college campuses, losing personal belongings—IDs, wallets, headpho
 | **Backend**   | Python Flask, SQLAlchemy, PyJWT                                       |
 | **Database**  | **Neon** (Serverless PostgreSQL)                                      |
 | **AI Engine** | **Google Gemini 2.0 Flash** (Text/Logic) + **OpenAI GPT-4o** (Vision) |
-| **Storage**   | **Cloudinary** (Image Optimization & Hosting)                         |
-| **Cloud Ops** | Firebase (Auth & Push Notifications), Vercel (Deployment)             |
+| **Storage**   | **Cloudinary** (Image compression & Hosting)                          |
+| **Cloud**     | Firebase (Auth & Push Notifications), Vercel (Deployment)             |
 
 ---
 
-## ⚡ Getting Started
+## SnapShots of the MVP :
+
+![MVP Snapshot 1](client/src/assets/image_1.jpg)
+![MVP Snapshot 2](client/src/assets/image_2.jpg)
+
+---
+
+## Website demo video :
+
+https://www.youtube.com/watch?v=rP8kG_iP4Lg
+
+---
+
+## Run it on your Localhost :
 
 ### Prerequisites
 
@@ -92,11 +107,4 @@ npm run dev
 
 ---
 
-## 🤝 Contribution
-
-Built with ❤️ for **GDG Hackathon 2025**.
-Contributions are welcome! Please open an issue or PR to discuss improvements.
-
-## 📄 License
-
-Distributed under the MIT License.
+Built with ❤️ by team **Deploy for Good** for **TechSprint Hackathon 2025 by GDG KJSCE**.
