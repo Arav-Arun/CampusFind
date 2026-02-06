@@ -1,0 +1,13 @@
+flask
+flask-sqlalchemy
+flask-cors
+firebase-admin
+python-dotenv
+Werkzeug
+requests
+PyJWT
+Pillow
+openai
+psycopg2-binary
+google-generativeai
+cloudinary
