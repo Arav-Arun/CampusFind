@@ -102,7 +102,3 @@ cd ../client
 npm install
 npm run dev
 ```
-
----
-
-Built with ❤️ by team **Deploy for Good** for **TechSprint Hackathon 2025 by GDG KJSCE**.
