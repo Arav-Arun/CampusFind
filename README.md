@@ -59,8 +59,9 @@ On bustling college campuses, losing personal belongings like IDs, wallets, head
 
 ## SnapShots of the MVP :
 
-![MVP Snapshot 1](client/src/assets/image_1.jpg)
-![MVP Snapshot 2](client/src/assets/image_2.jpg)
+<img src="client/src/assets/image_1.png" alt="MVP Snapshot 1" width="100%"/>
+
+<img src="client/src/assets/image_2.png" alt="MVP Snapshot 2" width="100%"/>
 
 ---
 
