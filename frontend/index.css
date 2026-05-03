@@ -1,0 +1,107 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-background text-text font-sans antialiased;
+}
+
+/* Scrollbar styling for a cleaner look */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-surface rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-secondary;
+}
+
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.safe-area-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.animate-in {
+  animation-duration: 200ms;
+  animation-fill-mode: both;
+}
+
+.fade-in {
+  animation-name: fade-in;
+}
+
+.zoom-in-95 {
+  animation-name: fade-in, zoom-in-95;
+}
+
+.slide-in-from-top-2 {
+  --slide-y: -0.5rem;
+  animation-name: fade-in, slide-in-y;
+}
+
+.slide-in-from-bottom-4 {
+  --slide-y: 1rem;
+  animation-name: fade-in, slide-in-y;
+}
+
+.slide-in-from-top-2.zoom-in-95,
+.slide-in-from-bottom-4.zoom-in-95 {
+  animation-name: fade-in, slide-in-y, zoom-in-95;
+}
+
+.shake {
+  animation-name: shake;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoom-in-95 {
+  from {
+    transform: scale(0.95);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-y {
+  from {
+    transform: translateY(var(--slide-y, 0));
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
