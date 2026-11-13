@@ -2,8 +2,6 @@
 
 A lost-and-found app for college campuses. Students report what they lost or found with a photo, the app tags the photo and suggests likely matches, and a claim ends in an in-person handoff confirmed with a one-time code.
 
-**Live:** https://campusfindapp.vercel.app · **Demo video (earlier version):** https://www.youtube.com/watch?v=rP8kG_iP4Lg
-
 ## Why
 
 Lost items on campus usually end up in scattered group chats and notice boards. Anyone can say "that's mine", and meeting a stranger to hand something over is awkward. CampusFind puts the whole loop in one place: report, match, claim, meet, confirm.
