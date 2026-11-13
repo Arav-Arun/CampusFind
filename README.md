@@ -1,7 +1,5 @@
 # CampusFind
 
-![CampusFind](public/banner.png)
-
 A lost-and-found app for college campuses. Students report what they lost or found with a photo, the app tags the photo and suggests likely matches, and a claim ends in an in-person handoff confirmed with a one-time code.
 
 **Live:** https://campusfindapp.vercel.app · **Demo video (earlier version):** https://www.youtube.com/watch?v=rP8kG_iP4Lg
@@ -34,7 +32,7 @@ Contact details stay hidden until a claim is accepted, and only one handoff per 
 ## Project structure
 
 ```text
-public/              Static assets (logo, banner, Google icon)
+public/              Static assets (logo, Google icon)
 src/
   App.jsx            Routes, route guard, lazy-loaded pages
   pages/             Home, ItemDetail, Upload, MyActivity, Profile, Stats, Scanner, Auth
