@@ -2,10 +2,10 @@ import React from "react";
 import { itemState } from "../format";
 
 const STATES = {
-  claimed: { label: "Recovered", className: "bg-recovered/10 text-recovered" },
-  in_progress: { label: "Handoff pending", className: "bg-progress/10 text-progress" },
-  lost: { label: "Lost", className: "bg-lost/10 text-lost" },
-  found: { label: "Found", className: "bg-found/10 text-found" },
+  claimed: { label: "Recovered", className: "bg-recovered/15 text-recovered" },
+  in_progress: { label: "Handoff pending", className: "bg-progress/15 text-progress" },
+  lost: { label: "Lost", className: "bg-lost/15 text-lost" },
+  found: { label: "Found", className: "bg-found/15 text-found" },
 };
 
 const StatusBadge = ({ item, className = "" }) => {

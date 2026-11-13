@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 import Button from "../components/Button";
@@ -25,8 +25,11 @@ const ItemDetail = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
 
-  const [item, setItem] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { state } = useLocation();
+  // A card passes its summary along, so the page can render before the full item arrives.
+  const preview = state?.item?.id === Number(id) ? state.item : null;
+  const [item, setItem] = useState(preview);
+  const [loading, setLoading] = useState(!preview);
   const [matches, setMatches] = useState([]);
   const [loadingMatches, setLoadingMatches] = useState(true);
   const [claims, setClaims] = useState([]);
@@ -157,7 +160,7 @@ const ItemDetail = () => {
       </Link>
 
       {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-text/40 p-4" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">
           <div className="panel w-full max-w-sm p-6 text-center">
             <CheckCircle size={40} className="mx-auto text-found" />
             <h2 className="mt-4 text-2xl font-bold">Item returned</h2>
@@ -177,12 +180,17 @@ const ItemDetail = () => {
       )}
 
       <ItemInfoCard item={item}>
-        <ReporterProfile reporter={item.reporter} />
-
-        {isOwner ? (
-          <OwnerClaimsView claims={claims} handleRespond={handleRespond} claimToScan={claimToScan} item={item} />
+        {item.reporter ? (
+          <>
+            <ReporterProfile reporter={item.reporter} />
+            {isOwner ? (
+              <OwnerClaimsView claims={claims} handleRespond={handleRespond} claimToScan={claimToScan} item={item} />
+            ) : (
+              <FinderClaimView myClaim={myClaim} item={item} user={user} setShowClaimModal={setShowClaimModal} />
+            )}
+          </>
         ) : (
-          <FinderClaimView myClaim={myClaim} item={item} user={user} setShowClaimModal={setShowClaimModal} />
+          <div className="h-32 animate-pulse rounded-xl bg-surface" aria-label="Loading details" />
         )}
       </ItemInfoCard>
 

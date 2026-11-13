@@ -113,7 +113,7 @@ const Home = () => {
                   aria-selected={activeTab === tab.value}
                   onClick={() => setActiveTab(tab.value)}
                   className={`flex-1 rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-                    activeTab === tab.value ? "bg-text text-surface" : "text-muted hover:text-text"
+                    activeTab === tab.value ? "bg-accent font-semibold text-background" : "text-muted hover:text-text"
                   }`}
                 >
                   {tab.label}
@@ -131,7 +131,7 @@ const Home = () => {
                   onClick={() => setSelectedCategory(active ? null : name)}
                   aria-pressed={active}
                   className={`whitespace-nowrap rounded-md border px-3 py-1 text-sm transition-colors ${
-                    active ? "border-text bg-text text-surface" : "border-line bg-surface hover:border-text/40"
+                    active ? "border-accent bg-accent font-medium text-background" : "border-line bg-surface hover:border-text/40"
                   }`}
                 >
                   {name}
@@ -141,9 +141,17 @@ const Home = () => {
           </div>
         </div>
 
-        {loading ? (
-          <p className="py-20 text-center text-muted">Loading reports...</p>
-        ) : items.length === 0 ? (
+        {loading && items.length === 0 ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Loading reports">
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="animate-pulse rounded-xl border border-line bg-surface p-2">
+                <div className="aspect-[4/3] rounded-lg bg-subtle" />
+                <div className="mx-1.5 mb-2 mt-4 h-3 w-1/3 rounded bg-subtle" />
+                <div className="mx-1.5 mb-2 h-4 w-3/4 rounded bg-subtle" />
+              </div>
+            ))}
+          </div>
+        ) : !loading && items.length === 0 ? (
           <div className="rounded-xl border border-dashed border-line px-6 py-16 text-center">
             <p className="font-medium">{filtered ? "No reports match that." : "Nothing has been reported yet."}</p>
             <p className="mt-1 text-sm text-muted">
@@ -152,7 +160,10 @@ const Home = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div
+              className={`grid grid-cols-1 gap-4 transition-opacity sm:grid-cols-2 xl:grid-cols-3 ${loading ? "opacity-50" : ""}`}
+              aria-busy={loading}
+            >
               {items.map((item) => (
                 <ItemCard key={item.id} item={item} />
               ))}

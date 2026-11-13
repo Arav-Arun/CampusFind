@@ -74,7 +74,7 @@ const Auth = ({ mode }) => {
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <Link to="/" className="mb-8 flex items-center gap-2">
         <img src="/logo.png" alt="" className="h-9 w-9 rounded-md object-contain" />
-        <span className="text-xl font-bold" style={{ fontStretch: "118%" }}>
+        <span className="text-xl font-bold">
           CampusFind
         </span>
       </Link>
@@ -96,7 +96,7 @@ const Auth = ({ mode }) => {
           onClick={handleGoogle}
           disabled={loading}
           type="button"
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-line bg-surface py-2.5 text-sm font-medium transition-colors hover:bg-subtle disabled:opacity-50"
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-white py-2.5 text-sm font-semibold text-black transition-colors hover:bg-gray-200 disabled:opacity-50"
         >
           <img src="/google.svg" className="h-4 w-4" alt="" />
           Continue with Google

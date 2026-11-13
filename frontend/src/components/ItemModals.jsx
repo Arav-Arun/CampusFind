@@ -3,7 +3,7 @@ import Button from "./Button";
 
 const Modal = ({ title, onClose, children }) => (
   <div
-    className="fixed inset-0 z-50 flex items-center justify-center bg-text/40 p-4"
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
     onClick={(e) => e.target === e.currentTarget && onClose()}
     onKeyDown={(e) => e.key === "Escape" && onClose()}
     role="dialog"

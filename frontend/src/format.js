@@ -29,3 +29,14 @@ const PLACEHOLDER_TAGS = new Set(["general item", "see image", "unknown", "none"
 /** Drops empty values and placeholder tags. */
 export const realTags = (...values) =>
   values.filter((v) => typeof v === "string" && v.trim() && !PLACEHOLDER_TAGS.has(v.trim().toLowerCase()));
+
+/**
+ * Asks Cloudinary for a resized, auto-format (WebP/AVIF) copy instead of the full photo.
+ * Other URLs are returned unchanged.
+ */
+export const imageSrc = (url, width) => {
+  if (typeof url !== "string" || !url.includes("res.cloudinary.com/") || !url.includes("/image/upload/")) return url;
+  const [head, tail] = url.split("/image/upload/");
+  if (/^[a-z]_[^/]*,|^[a-z]_[^/]*\//.test(tail)) return url; // already transformed
+  return `${head}/image/upload/f_auto,q_auto,c_limit,w_${width}/${tail}`;
+};

@@ -2,7 +2,7 @@ import React from "react";
 import { MapPin, Calendar } from "lucide-react";
 import SafeImage from "./SafeImage";
 import StatusBadge from "./StatusBadge";
-import { formatDay, realTags } from "../format";
+import { formatDay, imageSrc, realTags } from "../format";
 
 const ItemInfoCard = ({ item, children }) => {
   const tags = realTags(item.category, item.color, item.brand, ...(item.distinctive_features || []));
@@ -10,7 +10,7 @@ const ItemInfoCard = ({ item, children }) => {
   return (
     <div className="grid items-start gap-8 lg:grid-cols-2">
       <SafeImage
-        src={item.image_url}
+        src={imageSrc(item.image_url, 1000)}
         alt={item.description}
         className="aspect-square w-full rounded-xl border border-line bg-subtle object-cover"
         fallbackClassName="aspect-square w-full rounded-xl"

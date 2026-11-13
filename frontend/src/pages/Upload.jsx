@@ -93,8 +93,8 @@ const Upload = () => {
           <legend className="mb-1.5 text-sm font-medium">What happened?</legend>
           <div className="grid grid-cols-2 gap-2 rounded-lg border border-line bg-surface p-1">
             {[
-              { value: "lost", label: "I lost something", active: "bg-lost text-white" },
-              { value: "found", label: "I found something", active: "bg-found text-white" },
+              { value: "lost", label: "I lost something", active: "bg-lost text-background" },
+              { value: "found", label: "I found something", active: "bg-found text-background" },
             ].map((option) => (
               <label
                 key={option.value}
@@ -209,7 +209,7 @@ const Upload = () => {
                   aria-pressed={selected}
                   onClick={() => (selected ? setTags(tags.filter((t) => t !== tag)) : addTag(tag))}
                   className={`rounded-md border px-2.5 py-1 text-sm transition-colors ${
-                    selected ? "border-text bg-text text-surface" : "border-line bg-surface hover:border-text/40"
+                    selected ? "border-accent bg-accent font-medium text-background" : "border-line bg-surface hover:border-text/40"
                   }`}
                 >
                   {tag}

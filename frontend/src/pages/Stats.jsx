@@ -3,16 +3,16 @@ import { Chart } from "react-google-charts";
 import api from "../api";
 
 // Chart colours mirror the CSS tokens in index.css.
-const INK = "#16181D";
-const MUTED = "#5C6470";
-const LINE = "#D6DBD3";
-const COLORS = { lost: "#C7352F", found: "#1F7A4D", progress: "#A05C08", recovered: "#3B5BA9", open: "#9AA19A" };
+const INK = "#E8EAED";
+const MUTED = "#9AA0A6";
+const LINE = "#3C4043";
+const COLORS = { lost: "#F28B82", found: "#81C995", progress: "#FDD663", recovered: "#8AB4F8", open: "#5F6368" };
 
 const barOptions = (color) => ({
   backgroundColor: "transparent",
   legend: { position: "none" },
   colors: [color],
-  fontName: "Archivo",
+  fontName: "Inter",
   bar: { groupWidth: "65%" },
   chartArea: { left: 120, right: 16, top: 8, bottom: 32 },
   hAxis: { textStyle: { color: MUTED }, gridlines: { color: LINE }, baselineColor: LINE, format: "0" },
@@ -60,7 +60,7 @@ const Stats = () => {
   return (
     <div>
       <h1 className="display text-4xl">Campus insights</h1>
-      <p className="mt-6 max-w-2xl text-2xl leading-snug sm:text-3xl" style={{ fontStretch: "105%" }}>
+      <p className="mt-6 max-w-2xl text-2xl leading-snug sm:text-3xl">
         <span className="font-bold">{rate}%</span> of the {stats.total} items reported on campus are back with their owners.
       </p>
 
@@ -93,9 +93,9 @@ const Stats = () => {
             options={{
               backgroundColor: "transparent",
               pieHole: 0.55,
-              fontName: "Archivo",
+              fontName: "Inter",
               colors: [COLORS.recovered, COLORS.progress, COLORS.open],
-              pieSliceBorderColor: "#FFFFFF",
+              pieSliceBorderColor: "#303134",
               pieSliceText: "none",
               legend: { position: "right", alignment: "center", textStyle: { color: INK, fontSize: 13 } },
               chartArea: { left: 8, right: 8, top: 8, bottom: 8 },

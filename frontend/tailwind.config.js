@@ -21,7 +21,7 @@ export default {
         recovered: token("recovered"),
       },
       fontFamily: {
-        sans: ["Archivo", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
       },
     },
   },

@@ -4,18 +4,20 @@
 
 /* Design tokens (RGB triples so Tailwind can apply opacity). */
 :root {
-  --paper: 241 243 240;
-  --card: 255 255 255;
-  --subtle: 232 235 230;
-  --line: 214 219 211;
-  --ink: 22 24 29;
-  --muted: 92 100 112;
-  --brand: 35 64 201;
-  --brand-strong: 27 51 163;
-  --lost: 199 53 47;
-  --found: 31 122 77;
-  --progress: 160 92 8;
-  --recovered: 59 91 169;
+  /* Original CampusFind greys and blue accent */
+  --paper: 32 33 36; /* #202124 */
+  --card: 48 49 52; /* #303134 */
+  --subtle: 60 64 67; /* #3C4043 */
+  --line: 66 68 72; /* #424448 */
+  --ink: 232 234 237; /* #E8EAED */
+  --muted: 154 160 166; /* #9AA0A6 */
+  --brand: 0 188 212; /* #00BCD4 */
+  --brand-strong: 0 173 196; /* #00ADC4 */
+  /* States, from the same dark palette */
+  --lost: 242 139 130; /* #F28B82 */
+  --found: 129 201 149; /* #81C995 */
+  --progress: 253 214 99; /* #FDD663 */
+  --recovered: 138 180 248; /* #8AB4F8 */
 }
 
 @layer base {
@@ -23,12 +25,10 @@
     @apply bg-background text-text font-sans antialiased;
   }
 
-  /* Headings use Archivo's wide cut, like lost-property counter signage. */
   h1,
   h2,
   h3 {
-    font-stretch: 112%;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
   }
 
   :focus-visible {
@@ -55,10 +55,9 @@
 
 @layer components {
   .display {
-    font-stretch: 118%;
-    font-weight: 750;
-    letter-spacing: -0.02em;
-    line-height: 1.05;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
   }
 
   .panel {
@@ -71,16 +70,16 @@
 
   /* Claim statuses */
   .status-pending {
-    @apply text-progress bg-progress/10;
+    @apply text-progress bg-progress/15;
   }
   .status-accepted {
-    @apply text-found bg-found/10;
+    @apply text-found bg-found/15;
   }
   .status-rejected {
-    @apply text-lost bg-lost/10;
+    @apply text-lost bg-lost/15;
   }
   .status-completed {
-    @apply text-recovered bg-recovered/10;
+    @apply text-recovered bg-recovered/15;
   }
 
   /* The handoff code is printed on a cloakroom-style ticket:
@@ -111,8 +110,7 @@
     clip-path: inset(0 50% 0 0);
   }
   .ticket-code {
-    font-stretch: 125%;
-    font-weight: 800;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.18em;
   }

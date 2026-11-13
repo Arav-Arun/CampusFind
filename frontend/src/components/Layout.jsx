@@ -68,7 +68,7 @@ const Notifications = () => {
       </button>
 
       {open && (
-        <div className="panel absolute right-0 top-12 z-50 w-80 overflow-hidden shadow-lg shadow-text/5">
+        <div className="panel absolute right-0 top-12 z-50 w-80 overflow-hidden shadow-lg shadow-black/40">
           <p className="border-b border-line px-4 py-3 text-sm font-semibold">
             Notifications{unread > 0 && <span className="font-normal text-muted"> ({unread} new)</span>}
           </p>
@@ -114,7 +114,7 @@ const UserMenu = ({ user, logout }) => {
         <Avatar user={user} />
       </button>
       {open && (
-        <div className="panel absolute right-0 top-11 z-50 w-56 overflow-hidden py-1 shadow-lg shadow-text/5">
+        <div className="panel absolute right-0 top-11 z-50 w-56 overflow-hidden py-1 shadow-lg shadow-black/40">
           <div className="border-b border-line px-4 py-2.5">
             <p className="truncate text-sm font-medium">{user.name}</p>
             <p className="truncate text-xs text-muted">{user.email}</p>
@@ -139,24 +139,24 @@ const Layout = () => {
     <div className="flex min-h-screen flex-col">
       <PhoneBanner />
 
-      <header className="sticky top-0 z-40 border-b border-line bg-surface">
+      <header className="sticky top-0 z-40 border-b border-line bg-background/95 backdrop-blur">
         <div className="container mx-auto flex h-16 items-center gap-8 px-4">
           <Link to="/" className="flex items-center gap-2">
             <img src="/logo.png" alt="" className="h-8 w-8 rounded-md object-contain" />
-            <span className="text-lg font-bold" style={{ fontStretch: "118%" }}>
+            <span className="text-lg font-bold">
               CampusFind
             </span>
           </Link>
 
-          <nav className="hidden h-full items-stretch gap-6 md:flex" aria-label="Main">
+          <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
             {LINKS.map(({ to, label }) => (
               <NavLink
                 key={to}
                 to={to}
                 end
                 className={({ isActive }) =>
-                  `flex items-center border-b-2 text-sm font-medium transition-colors ${
-                    isActive ? "border-accent text-text" : "border-transparent text-muted hover:text-text"
+                  `rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                    isActive ? "bg-accent font-semibold text-background" : "text-muted hover:bg-subtle hover:text-text"
                   }`
                 }
               >
@@ -192,7 +192,7 @@ const Layout = () => {
       </main>
 
       <nav
-        className="safe-area-bottom fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-line bg-surface pt-2 md:hidden"
+        className="safe-area-bottom fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-line bg-surface/95 pt-2 backdrop-blur md:hidden"
         aria-label="Main"
       >
         {[...LINKS, { to: "/profile", label: "Profile", icon: User }].map(({ to, label, icon: Icon }) => (

@@ -11,15 +11,24 @@ import ItemDetail from "./pages/ItemDetail";
 // Less-visited pages load on demand: Insights pulls in the charting library and
 // the sign-in page pulls in Firebase, so neither slows down browsing.
 const Auth = lazy(() => import("./pages/Auth"));
-const Upload = lazy(() => import("./pages/Upload"));
-const MyActivity = lazy(() => import("./pages/MyActivity"));
-const Scanner = lazy(() => import("./pages/Scanner"));
-const Stats = lazy(() => import("./pages/Stats"));
-const Profile = lazy(() => import("./pages/Profile"));
+/** React.lazy plus a _preload() hook that starts the download early. */
+const lazyPage = (load) => Object.assign(lazy(load), { _preload: load });
+const Upload = lazyPage(() => import("./pages/Upload"));
+const MyActivity = lazyPage(() => import("./pages/MyActivity"));
+const Scanner = lazyPage(() => import("./pages/Scanner"));
+const Stats = lazyPage(() => import("./pages/Stats"));
+const Profile = lazyPage(() => import("./pages/Profile"));
 
 // Analytics only run when a measurement ID is configured.
 const GA_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
 if (GA_ID) ReactGA.initialize(GA_ID);
+
+// Fetch the other pages' code while the browser is idle, so opening them is instant.
+const preloadPages = () => [Upload, MyActivity, Stats, Profile].forEach((page) => page._preload?.());
+if (typeof window !== "undefined") {
+  const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
+  window.addEventListener("load", () => idle(preloadPages), { once: true });
+}
 
 const PageViews = () => {
   const { pathname, search } = useLocation();
@@ -40,7 +49,7 @@ const RequireAuth = ({ children }) => {
 const App = () => (
   <BrowserRouter>
     <PageViews />
-    <ToastContainer position="top-center" autoClose={4000} newestOnTop hideProgressBar theme="light" />
+    <ToastContainer position="top-center" autoClose={4000} newestOnTop hideProgressBar theme="dark" />
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
