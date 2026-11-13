@@ -25,8 +25,26 @@ Object.assign(process.env, {
 console.error = () => {}; // expected failures (bad tokens, missing storage) are logged by the app
 
 const jwt = require("jsonwebtoken");
-const { sequelize, User, Item, Claim } = require("../db");
+const { QueryTypes } = require("sequelize");
+const { sequelize, User, Item, Claim, migrate } = require("../db");
 const app = require("../server");
+const ai = require("../services/ai");
+const images = require("../services/images");
+const matching = require("../services/matching");
+
+// Deterministic stand-in for OpenAI embeddings: a normalised, hashed bag of words,
+// so texts that share words are close and unrelated texts are not.
+const fakeEmbed = async (texts) =>
+  texts.map((text) => {
+    const v = new Array(ai.EMBEDDING_DIMS).fill(0);
+    for (const word of text.toLowerCase().match(/[a-z0-9]+/g) || []) {
+      let h = 0;
+      for (const ch of word) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+      v[h % v.length] += 1;
+    }
+    const norm = Math.hypot(...v) || 1;
+    return v.map((x) => x / norm);
+  });
 
 const PASSWORD = "Passw0rd!";
 const PNG = Buffer.from(
@@ -66,10 +84,11 @@ const makeItem = (fields) =>
     ...fields,
   });
 
-let owner, claimant, stranger, lost, found;
+let owner, claimant, stranger, lost, found, vector;
 
 test.before(async () => {
   await sequelize.sync({ force: true });
+  ({ vector } = await migrate());
   server = app.listen(0);
   base = `http://127.0.0.1:${server.address().port}/api`;
   owner = await signup("Owner@Campus.edu", "Owner");
@@ -237,4 +256,56 @@ test("errors are JSON and never leak internals", async () => {
   const res = await fetch(`${base}/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{bad" });
   assert.equal(res.status, 400);
   assert.deepEqual(await res.json(), { error: "Invalid request body" });
+});
+
+test("semantic matching, match alerts and backfill", async (t) => {
+  if (!vector) {
+    if (process.env.REQUIRE_PGVECTOR) assert.fail("pgvector is required in CI");
+    return t.skip("pgvector is not installed in the test database");
+  }
+  const real = { embed: ai.embed, uploadImage: images.uploadImage };
+  ai.embed = fakeEmbed;
+  images.uploadImage = async () => "https://img.test/photo.jpg";
+  const hasEmbedding = async (id) =>
+    (await sequelize.query("SELECT embedding IS NOT NULL AS has FROM item WHERE id = :id", { replacements: { id }, type: QueryTypes.SELECT }))[0].has;
+  const report = async (token, type, description, location) => {
+    const form = imageForm(type);
+    form.append("description", description);
+    form.append("location", location);
+    form.append("date_lost", "2026-01-05");
+    const res = await call("POST", "/items", { token, form });
+    assert.equal(res.status, 201, JSON.stringify(res.json));
+    return res.json.item.id;
+  };
+
+  try {
+    const mine = await report(owner.token, "lost", "Black leather wallet with student ID card", "Main Library, 1st floor");
+    const umbrella = await report(stranger.token, "found", "Yellow umbrella with wooden handle", "Sports complex");
+    const theirs = await report(claimant.token, "found", "Black leather wallet, has a student ID card inside", "Main Library");
+
+    assert.ok(await hasEmbedding(theirs), "uploads are embedded");
+    assert.equal((await Item.findByPk(mine)).date_lost.toISOString().slice(0, 10), "2026-01-05", "reporter's date is kept");
+
+    const matches = (await call("GET", `/items/match/${mine}`)).json;
+    assert.equal(matches[0].id, theirs, "the similar wallet ranks first");
+    assert.equal(matches[0].method, "semantic");
+    assert.equal(matches[0].reasoning, "Similar description, same place");
+    assert.ok(!matches.some((m) => m.id === umbrella), "unrelated reports are left out");
+
+    const alert = (await call("GET", "/claims/notifications", { token: owner.token })).json.find(
+      (n) => n.id.startsWith("match_") && n.link === `/item/${theirs}`
+    );
+    assert.ok(alert, "the owner of the lost wallet is told about the found one");
+    assert.match(alert.text, /found report may match your "Black leather wallet/);
+    assert.equal((await call("POST", "/claims/notifications/read", { token: owner.token, body: { id: alert.id } })).status, 200);
+    assert.ok(!(await call("GET", "/claims/notifications", { token: stranger.token })).json.some((n) => n.id.startsWith("match_")));
+
+    const old = await makeItem({ user_id: stranger.id, description: "Old report from before embeddings" });
+    assert.ok((await matching.backfill()) >= 1);
+    assert.ok(await hasEmbedding(old.id), "backfill embeds older reports");
+    assert.equal(await matching.backfill(), 0, "backfill is idempotent");
+  } finally {
+    Object.assign(ai, { embed: real.embed });
+    Object.assign(images, { uploadImage: real.uploadImage });
+  }
 });

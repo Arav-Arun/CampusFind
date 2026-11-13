@@ -68,4 +68,22 @@ async function analyzeImage(imageDataUri, userDescription = "") {
   }
 }
 
-module.exports = { analyzeImage };
+// Embeddings power semantic matching. 512 dimensions (instead of the model's
+// default 1536) keeps the vector index small with little loss in quality.
+const EMBEDDING_MODEL = "text-embedding-3-small";
+const EMBEDDING_DIMS = 512;
+
+/**
+ * Embeds several texts in one request.
+ * @param {string[]} texts
+ * @returns {Promise<number[][] | null>} one vector per text, or null when no API key is configured
+ */
+async function embed(texts) {
+  const openai = getClient();
+  if (!openai) return null;
+  const response = await openai.embeddings.create({ model: EMBEDDING_MODEL, input: texts, dimensions: EMBEDDING_DIMS });
+  return response.data.sort((a, b) => a.index - b.index).map((d) => d.embedding);
+}
+
+// Exported as one object and called as ai.embed(...) elsewhere, so tests can swap in a fake.
+module.exports = { analyzeImage, embed, EMBEDDING_DIMS };

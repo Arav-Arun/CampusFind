@@ -164,6 +164,7 @@ router.get(
       limit: 5,
       attributes: ["id", "name", "trust_score", "profile_photo"],
     });
+    res.set("Cache-Control", "public, max-age=0, s-maxage=60, stale-while-revalidate=180");
     res.json(users.map((u) => ({ id: u.id, name: u.name, trust_score: u.trust_score || 0, profile_photo: u.profile_photo })));
   })
 );

@@ -15,7 +15,7 @@ Lost items on campus usually end up in scattered group chats and notice boards. 
 ## How it works
 
 1. **Report.** Upload a photo, where you lost or found it, and when. GPT-4o-mini reads the photo and adds tags (category, colour, brand, distinctive marks).
-2. **Match.** Each report lists reports of the opposite kind that share its tags.
+2. **Match.** Every report is embedded with OpenAI (`text-embedding-3-small`, 512 dimensions) and stored in Postgres with pgvector. Each item page lists the nearest open reports of the opposite kind by cosine similarity, and when a new report closely resembles yours you get a notification. Reports without an embedding fall back to tag matching.
 3. **Claim.** The claimant explains why it's theirs (or where they found it). The reporter accepts and sets a meeting place and time, or declines.
 4. **Meet.** The claimant gets a 6-digit handoff code. The reporter types it in at the meeting to confirm the return.
 5. **Recover.** The item is marked returned, leaves the feed, and the finder earns trust points on the leaderboard.
@@ -28,7 +28,7 @@ Contact details stay hidden until a claim is accepted, and only one handoff per 
 | --- | --- |
 | Frontend | React 19, Vite, React Router, Tailwind CSS |
 | Backend | Node.js, Express, Sequelize |
-| Database | Postgres (Neon) |
+| Database | Postgres (Neon) with pgvector |
 | Auth | JWT, bcrypt, Firebase (Google sign-in) |
 | Images and AI | Cloudinary, sharp, OpenAI |
 | Testing and CI | Node test runner against a real Postgres, GitHub Actions |
@@ -43,7 +43,8 @@ backend/
   middleware.js    Auth, error handling, rate limits, input helpers
   firebase.js      Verifies Google sign-in tokens
   routes/          auth.js, items.js, claims.js
-  services/        ai.js (photo tagging), images.js (resize, upload, URL handling)
+  cli.js           npm run db:migrate / db:embed
+  services/        ai.js (tagging, embeddings), images.js (resize, upload, URLs), matching.js
   test/            API integration tests
 frontend/
   src/
@@ -62,7 +63,8 @@ You need Node 20+ and a Postgres database (a free Neon project works).
 cd backend
 npm install
 cp .env.example .env   # fill in the values
-npm run db:sync        # creates any missing tables
+npm run db:migrate     # missing tables, indexes and the pgvector column (safe to re-run)
+npm run db:embed       # embeds reports that don't have a vector yet
 npm run dev            # http://localhost:5001
 ```
 
@@ -84,7 +86,7 @@ cd backend
 TEST_DATABASE_URL=postgres://postgres@127.0.0.1:5432/campusfind_test npm test
 ```
 
-They cover sign-up and login rules, token checks, upload authorisation, pagination and search escaping, contact privacy, the full claim and handoff flow, code expiry and replay, and rate limiting.
+A fake embedder stands in for OpenAI, so semantic matching is tested without network calls. CI uses the `pgvector/pgvector` Postgres image. They cover sign-up and login rules, token checks, upload authorisation, pagination and search escaping, contact privacy, the full claim and handoff flow, code expiry and replay, rate limiting, semantic ranking, match alerts and backfill.
 
 ## API
 

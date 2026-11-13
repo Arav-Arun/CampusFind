@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 const express = require("express");
 const { Op } = require("sequelize");
-const { sequelize, Claim, Item, User } = require("../db");
+const { sequelize, Claim, Item, User, MatchAlert } = require("../db");
 const { HttpError, clip, parseId, asyncHandler, authMiddleware, verifyLimiter } = require("../middleware");
 
 const router = express.Router();
@@ -191,7 +191,7 @@ router.get(
       return { id, text, link: `/item/${c.item_id}`, time: iso(c.timestamp), read: read.has(id) };
     };
 
-    const [incoming, mine] = await Promise.all([
+    const [incoming, mine, alerts] = await Promise.all([
       // Pending claims on items I reported
       Claim.findAll({
         where: { status: "pending" },
@@ -202,6 +202,16 @@ router.get(
         where: { claimant_id: req.user.id, status: { [Op.in]: ["accepted", "rejected", "completed"] } },
         include: [{ model: Item }],
       }),
+      // New reports that look like one of mine
+      MatchAlert.findAll({
+        where: { user_id: req.user.id },
+        include: [
+          { model: Item, as: "item", attributes: ["id", "description"] },
+          { model: Item, as: "matchedItem", attributes: ["id", "type", "status"] },
+        ],
+        order: [["created_at", "DESC"]],
+        limit: 20,
+      }).catch(() => []), // the table only exists once `npm run db:migrate` has run
     ]);
 
     const notifications = [
@@ -210,6 +220,17 @@ router.get(
         notify(c, `Your claim for '${c.Item?.description || "Unknown"}' was ${c.status === "completed" ? "verified & recovered" : c.status}`)
       ),
     ];
+    for (const alert of alerts) {
+      if (!alert.item || !alert.matchedItem || alert.matchedItem.status !== "unresolved") continue;
+      const id = `match_${alert.id}`;
+      notifications.push({
+        id,
+        text: `A ${alert.matchedItem.type} report may match your "${alert.item.description}"`,
+        link: `/item/${alert.matched_item_id}`,
+        time: iso(alert.created_at),
+        read: read.has(id),
+      });
+    }
     notifications.sort((a, b) => new Date(b.time) - new Date(a.time));
     res.json(notifications);
   })
@@ -220,7 +241,7 @@ router.post(
   authMiddleware,
   asyncHandler(async (req, res) => {
     const id = clip(req.body.id, 100);
-    if (!/^claim_\d+_[a-z]+$/.test(id)) throw new HttpError(400, "Invalid notification ID");
+    if (!/^(claim_\d+_[a-z]+|match_\d+)$/.test(id)) throw new HttpError(400, "Invalid notification ID");
 
     const read = readIds(req.user);
     if (!read.includes(id)) {

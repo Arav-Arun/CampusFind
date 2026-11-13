@@ -11,23 +11,19 @@ const {
   optionalAuth,
   uploadLimiter,
 } = require("../middleware");
-const { analyzeImage } = require("../services/ai");
-const { compressImage, uploadImage, itemImageUrl } = require("../services/images");
+// Services are used through their module objects so tests can swap in fakes.
+const ai = require("../services/ai");
+const images = require("../services/images");
+const matching = require("../services/matching");
+
+const { parseFeatures, contains } = matching;
+
+// Public, user-independent responses can be served from Vercel's CDN for a short while.
+const cachePublic = (res, seconds) =>
+  res.set("Cache-Control", `public, max-age=0, s-maxage=${seconds}, stale-while-revalidate=${seconds * 3}`);
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1 } });
-
-const parseFeatures = (value) => {
-  try {
-    const parsed = JSON.parse(value || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
-
-/** Escapes LIKE wildcards so user input is matched literally. */
-const contains = (term) => ({ [Op.iLike]: `%${term.replace(/[\\%_]/g, "\\$&")}%` });
 
 const RECOVERED_STATUSES = ["claimed", "matched", "completed"];
 
@@ -64,7 +60,7 @@ const summarize = async (items) => {
       description: item.description,
       location: item.location,
       date_lost: item.date_lost ? item.date_lost.toISOString().slice(0, 16).replace("T", " ") : "",
-      image_url: itemImageUrl(item),
+      image_url: images.itemImageUrl(item),
       category: item.category,
       color: item.color,
       brand: item.brand,
@@ -90,7 +86,7 @@ router.post(
 
     let compressed;
     try {
-      compressed = await compressImage(req.file.buffer);
+      compressed = await images.compressImage(req.file.buffer);
     } catch {
       throw new HttpError(400, "File is not a valid image");
     }
@@ -99,11 +95,11 @@ router.post(
     const dataUri = `data:image/jpeg;base64,${compressed.toString("base64")}`;
     // Hosting the photo and tagging it are independent, so run them together.
     const [image_url, analysis] = await Promise.all([
-      uploadImage(compressed).catch((err) => {
+      images.uploadImage(compressed).catch((err) => {
         console.error("Image upload failed:", err.message);
         throw new HttpError(502, "Image upload failed");
       }),
-      analyzeImage(dataUri, description),
+      ai.analyzeImage(dataUri, description),
     ]);
 
     let manualTags = [];
@@ -132,6 +128,14 @@ router.post(
       distinctive_features: JSON.stringify([...new Set([...analysis.distinctive_features, ...manualTags])]),
       contact_info: clip(req.body.contact_info, 200),
     });
+
+    // Embed the report and alert reporters of similar ones. A failure here only
+    // costs the semantic match, never the report itself.
+    try {
+      if (await matching.storeEmbeddings([item])) await matching.alertMatches(item);
+    } catch (err) {
+      console.error("Matching failed:", err.message);
+    }
 
     res.status(201).json({
       message: "Item reported successfully",
@@ -170,6 +174,7 @@ router.get(
 
     // Fetch one extra row to know whether another page exists.
     const rows = await Item.findAll({ where, order: [["date_lost", "DESC"], ["id", "DESC"]], limit: limit + 1, offset });
+    cachePublic(res, 15);
     res.json({ items: await summarize(rows.slice(0, limit)), has_more: rows.length > limit });
   })
 );
@@ -215,6 +220,7 @@ router.get(
               FROM item GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 5`),
     ]);
 
+    cachePublic(res, 60);
     const sum = (predicate) => byTypeState.filter(predicate).reduce((total, row) => total + row.count, 0);
     res.json({
       total: sum(() => true),
@@ -238,49 +244,36 @@ router.get(
     const source = await Item.findByPk(parseId(req.params.id));
     if (!source) throw new HttpError(404, "Item not found");
 
-    const terms = [source.category, source.brand, source.color, ...parseFeatures(source.distinctive_features)]
-      .filter((t) => typeof t === "string" && t.trim())
-      .map((t) => t.trim());
-    if (terms.length === 0) return res.json([]);
-
-    const candidates = await Item.findAll({
-      where: {
-        type: source.type === "lost" ? "found" : "lost",
-        status: "unresolved",
-        user_id: { [Op.ne]: source.user_id },
-        [Op.or]: terms.flatMap((term) => [
-          { description: contains(term) },
-          { category: contains(term) },
-          { distinctive_features: contains(term) },
-        ]),
-      },
-      limit: 20,
+    // Nearest reports by meaning when this one has an embedding, shared tags otherwise.
+    const semantic = await matching.semanticMatches(source).catch((err) => {
+      console.error("Semantic matching failed:", err.message);
+      return null;
     });
+    const found = semantic ?? (await matching.keywordMatches(source));
+    const summaries = await summarize(found.map((m) => m.item));
 
-    // Score = share of the source item's terms that appear in the candidate's text.
-    const available = (await summarize(candidates)).filter((cand) => !cand.claim_locked);
-    const matches = available
-      .map((cand) => {
-        const text = `${cand.description} ${cand.category} ${cand.distinctive_features}`.toLowerCase();
-        const hits = terms.filter((term) => text.includes(term.toLowerCase())).length;
-        return {
-          id: cand.id,
-          confidence: Math.min(Math.round((hits / terms.length) * 100), 95),
-          reasoning: "Keyword Text Match",
+    cachePublic(res, 30);
+    res.json(
+      found
+        .map((m, i) => ({
+          id: m.item.id,
+          confidence: Math.round(m.score * 100),
+          method: m.method,
+          reasoning: m.reason,
           item: {
-            id: cand.id,
-            description: cand.description,
-            image_url: cand.image_url,
-            category: cand.category,
-            color: cand.color,
-            claim_state: cand.claim_state,
+            id: m.item.id,
+            description: summaries[i].description,
+            image_url: summaries[i].image_url,
+            category: summaries[i].category,
+            color: summaries[i].color,
+            claim_state: summaries[i].claim_state,
           },
-        };
-      })
-      .filter((m) => m.confidence > 20)
-      .sort((a, b) => b.confidence - a.confidence);
-
-    res.json(matches.slice(0, 5));
+          locked: summaries[i].claim_locked,
+        }))
+        .filter((m) => !m.locked)
+        .slice(0, 5)
+        .map(({ locked, ...m }) => m) // eslint-disable-line no-unused-vars
+    );
   })
 );
 

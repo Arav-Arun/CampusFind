@@ -1,4 +1,5 @@
 const { Sequelize, DataTypes } = require("sequelize");
+const { EMBEDDING_DIMS } = require("./services/ai");
 require("pg"); // Explicit require so the Vercel bundler includes the driver.
 
 if (!process.env.DATABASE_URL) {
@@ -68,11 +69,54 @@ const Claim = sequelize.define(
   { tableName: "claim", timestamps: false }
 );
 
+// "A new report looks like yours": one row per (your report, new report) pair.
+const MatchAlert = sequelize.define(
+  "MatchAlert",
+  {
+    user_id: { type: DataTypes.INTEGER, allowNull: false }, // who is told
+    item_id: { type: DataTypes.INTEGER, allowNull: false }, // their report
+    matched_item_id: { type: DataTypes.INTEGER, allowNull: false }, // the new report that resembles it
+    similarity: { type: DataTypes.FLOAT, allowNull: false },
+    created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+  },
+  {
+    tableName: "match_alert",
+    timestamps: false,
+    indexes: [{ unique: true, fields: ["item_id", "matched_item_id"] }, { fields: ["user_id"] }],
+  }
+);
+
 User.hasMany(Item, { foreignKey: "user_id" });
 Item.belongsTo(User, { foreignKey: "user_id" });
 User.hasMany(Claim, { foreignKey: "claimant_id" });
 Claim.belongsTo(User, { foreignKey: "claimant_id", as: "claimant" });
 Item.hasMany(Claim, { foreignKey: "item_id" });
 Claim.belongsTo(Item, { foreignKey: "item_id" });
+MatchAlert.belongsTo(Item, { foreignKey: "item_id", as: "item", onDelete: "CASCADE" });
+MatchAlert.belongsTo(Item, { foreignKey: "matched_item_id", as: "matchedItem", onDelete: "CASCADE" });
 
-module.exports = { sequelize, User, Item, Claim };
+/**
+ * Brings the schema up to date. Safe to run repeatedly: it creates missing
+ * tables but never alters or drops existing ones, then adds the pgvector
+ * column and index. Item embeddings live outside the Sequelize model, so
+ * normal queries never load the vectors.
+ * @returns {Promise<{vector: boolean}>} vector is false when pgvector isn't installed
+ */
+async function migrate() {
+  await sequelize.sync();
+  // Indexes for the hot paths: the feed (newest first) and claim lookups by item and claimant.
+  await sequelize.query("CREATE INDEX IF NOT EXISTS item_date_idx ON item (date_lost DESC, id DESC)");
+  await sequelize.query("CREATE INDEX IF NOT EXISTS claim_item_idx ON claim (item_id, status)");
+  await sequelize.query("CREATE INDEX IF NOT EXISTS claim_claimant_idx ON claim (claimant_id)");
+  try {
+    await sequelize.query("CREATE EXTENSION IF NOT EXISTS vector");
+  } catch (err) {
+    console.warn("pgvector is unavailable, so matching falls back to keywords:", err.message);
+    return { vector: false };
+  }
+  await sequelize.query(`ALTER TABLE item ADD COLUMN IF NOT EXISTS embedding vector(${EMBEDDING_DIMS})`);
+  await sequelize.query("CREATE INDEX IF NOT EXISTS item_embedding_idx ON item USING hnsw (embedding vector_cosine_ops)");
+  return { vector: true };
+}
+
+module.exports = { sequelize, User, Item, Claim, MatchAlert, migrate };
