@@ -1,25 +1,27 @@
 /** @type {import('tailwindcss').Config} */
+const token = (name) => `rgb(var(--${name}) / <alpha-value>)`;
+
 export default {
-  content: [
-    "./index.html",
-    "./*.{js,jsx}",
-    "./components/**/*.{js,jsx}",
-    "./pages/**/*.{js,jsx}",
-    "./context/**/*.{js,jsx}"
-  ],
+  content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
-        background: "#202124",
-        surface: "#303134",
-        primary: "#8AB4F8", // Google Blue/Cyan-ish
-        secondary: "#5F6368",
-        accent: "#00BCD4", // Cyan
-        text: "#E8EAED",
-        muted: "#9AA0A6",
+        background: token("paper"), // page
+        surface: token("card"), // raised panels
+        subtle: token("subtle"), // fields, hovers
+        line: token("line"), // borders and dividers
+        text: token("ink"),
+        muted: token("muted"),
+        accent: token("brand"), // actions only
+        "accent-strong": token("brand-strong"),
+        // Item and claim states. Colour always means a state, never decoration.
+        lost: token("lost"),
+        found: token("found"),
+        progress: token("progress"),
+        recovered: token("recovered"),
       },
       fontFamily: {
-        sans: ["Inter", "sans-serif"], // Professional font
+        sans: ["Archivo", "system-ui", "sans-serif"],
       },
     },
   },

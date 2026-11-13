@@ -4,9 +4,6 @@ import { ImageOff } from "lucide-react";
 const isBase64Image = (value) =>
   value.length > 100 && /^[A-Za-z0-9+/]+={0,2}$/.test(value);
 
-const isImageFilename = (value) =>
-  /^[^/?#]+\.(avif|gif|jpe?g|png|webp)$/i.test(value);
-
 const normalizeImageSrc = (src) => {
   if (!src || typeof src !== "string") return "";
 
@@ -15,7 +12,6 @@ const normalizeImageSrc = (src) => {
   if (value.startsWith("data:") || value.startsWith("blob:")) return value;
   if (value.startsWith("http://") || value.startsWith("https://")) return value;
   if (isBase64Image(value)) return `data:image/jpeg;base64,${value}`;
-  if (isImageFilename(value)) return `/uploads/${value}`;
 
   return value.startsWith("/") ? value : `/${value}`;
 };
@@ -25,7 +21,7 @@ const SafeImage = ({
   alt,
   className = "",
   fallbackClassName = "",
-  fallbackText = "Image unavailable",
+  fallbackText = "No photo",
   fallbackIconSize = 28,
 }) => {
   const [failedSrc, setFailedSrc] = useState("");
@@ -35,7 +31,7 @@ const SafeImage = ({
   if (!imageSrc || failed) {
     return (
       <div
-        className={`flex flex-col items-center justify-center gap-2 bg-background text-muted ${fallbackClassName || className}`}
+        className={`flex flex-col items-center justify-center gap-2 bg-subtle text-muted ${fallbackClassName || className}`}
         role="img"
         aria-label={alt || fallbackText}
       >

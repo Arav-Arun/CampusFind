@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens (RGB triples so Tailwind can apply opacity). */
+:root {
+  --paper: 241 243 240;
+  --card: 255 255 255;
+  --subtle: 232 235 230;
+  --line: 214 219 211;
+  --ink: 22 24 29;
+  --muted: 92 100 112;
+  --brand: 35 64 201;
+  --brand-strong: 27 51 163;
+  --lost: 199 53 47;
+  --found: 31 122 77;
+  --progress: 160 92 8;
+  --recovered: 59 91 169;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-text font-sans antialiased;
+  }
+
+  /* Headings use Archivo's wide cut, like lost-property counter signage. */
+  h1,
+  h2,
+  h3 {
+    font-stretch: 112%;
+    letter-spacing: -0.01em;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--brand));
+    outline-offset: 2px;
+  }
+
+  input,
+  textarea,
+  select {
+    @apply bg-surface border border-line rounded-lg px-3 py-2 text-text placeholder:text-muted/70 outline-none transition-colors;
+  }
+  input:focus,
+  textarea:focus,
+  select:focus {
+    @apply border-accent;
+  }
+  input[type="radio"],
+  input[type="checkbox"],
+  input[type="file"] {
+    @apply border-0 p-0 bg-transparent rounded-none;
+  }
+}
+
+@layer components {
+  .display {
+    font-stretch: 118%;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+
+  .panel {
+    @apply bg-surface border border-line rounded-xl;
+  }
+
+  .tag {
+    @apply px-2.5 py-1 bg-subtle rounded-md text-sm text-text;
+  }
+
+  /* Claim statuses */
+  .status-pending {
+    @apply text-progress bg-progress/10;
+  }
+  .status-accepted {
+    @apply text-found bg-found/10;
+  }
+  .status-rejected {
+    @apply text-lost bg-lost/10;
+  }
+  .status-completed {
+    @apply text-recovered bg-recovered/10;
+  }
+
+  /* The handoff code is printed on a cloakroom-style ticket:
+     a dashed tear line with a notch bitten out of each edge. */
+  .ticket {
+    @apply relative bg-surface border border-line rounded-xl;
+  }
+  .ticket-tear {
+    @apply relative border-t-2 border-dashed border-line;
+  }
+  .ticket-tear::before,
+  .ticket-tear::after {
+    content: "";
+    position: absolute;
+    top: -11px;
+    width: 20px;
+    height: 20px;
+    border-radius: 9999px;
+    background: rgb(var(--paper));
+    border: 1px solid rgb(var(--line));
+  }
+  .ticket-tear::before {
+    left: -11px;
+    clip-path: inset(0 0 0 50%);
+  }
+  .ticket-tear::after {
+    right: -11px;
+    clip-path: inset(0 50% 0 0);
+  }
+  .ticket-code {
+    font-stretch: 125%;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.18em;
+  }
+}
+
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.safe-area-bottom {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
