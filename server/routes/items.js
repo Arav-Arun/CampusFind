@@ -153,7 +153,7 @@ router.get(
     if (type === "lost" || type === "found") where.type = type;
 
     for (const term of [clip(q, 100), clip(req.query.tag, 50)].filter(Boolean)) {
-      and.push({ [Op.or]: ["description", "category", "brand", "location"].map((field) => ({ [field]: contains(term) })) });
+      and.push({ [Op.or]: ["description", "category", "color", "brand", "location"].map((field) => ({ [field]: contains(term) })) });
     }
     if (and.length) where[Op.and] = and;
 
