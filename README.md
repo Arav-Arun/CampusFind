@@ -27,6 +27,16 @@ Lost items on campus usually end up in scattered group chats and notice boards. 
 4. **Meet.** The claimant gets a 6-digit handoff code. The reporter types it in at the meeting to confirm the return.
 5. **Recover.** The item is marked returned, leaves the feed, and the finder earns trust points on the leaderboard.
 
+## Screenshots
+
+| Browse reports | Item page and matches |
+| :---: | :---: |
+| <img src="screenshots/home.webp" width="400" alt="Home feed with search, category filters and the top finders leaderboard"> | <img src="screenshots/item.webp" width="400" alt="Item page with photo tags, reporter and a 69% similar match"> |
+| **Report an item** | **Confirm a handoff** |
+| <img src="screenshots/upload.webp" width="400" alt="Report form with lost or found toggle, photo upload, place and date"> | <img src="screenshots/scan.webp" width="400" alt="Entering the 6-digit handoff code"> |
+| **Campus insights** | **Sign in** |
+| <img src="screenshots/stats.webp" width="400" alt="Insights page with recovery rate, places and report status charts"> | <img src="screenshots/login.webp" width="400" alt="Sign in with Google or email"> |
+
 ## Tech stack
 
 | Area | Tools |
@@ -42,6 +52,7 @@ Lost items on campus usually end up in scattered group chats and notice boards. 
 
 ```text
 public/              Static assets (logo, Google icon)
+screenshots/         README screenshots
 src/
   App.jsx            Routes, route guard, lazy-loaded pages
   pages/             Home, ItemDetail, Upload, MyActivity, Profile, Stats, Scanner, Auth
