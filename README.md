@@ -1,108 +1,117 @@
-# 🎓 CampusFind
+# CampusFind
 
-![CampusFind Banner](README-assets/banner.png)
+![CampusFind](README-assets/banner.png)
 
-CampusFind is a smart lost-and-found platform for college campuses. It helps students report lost or found items, upload photos, discover possible matches, submit claims, and verify safe returns.
+[![CI](https://github.com/Arav-Arun/CampusFind/actions/workflows/ci.yml/badge.svg)](https://github.com/Arav-Arun/CampusFind/actions/workflows/ci.yml)
 
----
+A lost-and-found app for college campuses. Students report what they lost or found with a photo, the app tags the photo and suggests likely matches, and a claim ends in an in-person handoff confirmed with a one-time code.
 
-## The Problem
+**Live:** https://campusfindapp.vercel.app · **Demo video (earlier version):** https://www.youtube.com/watch?v=rP8kG_iP4Lg
 
-On a busy campus, losing IDs, wallets, keys, bottles, earbuds, and books is common. The usual recovery methods are messy:
+## Why
 
-- **Unorganized**: Scattered WhatsApp messages, notice boards, and word of mouth.
-- **Unverified**: Anyone can claim an item without proving ownership.
-- **Awkward**: Coordinating handoffs with strangers can be uncomfortable.
+Lost items on campus usually end up in scattered group chats and notice boards. Anyone can say "that's mine", and meeting a stranger to hand something over is awkward. CampusFind puts the whole loop in one place: report, match, claim, meet, confirm.
 
-## The Solution
+## How it works
 
-CampusFind brings the whole lost-and-found flow into one place:
+1. **Report.** Upload a photo, where you lost or found it, and when. GPT-4o-mini reads the photo and adds tags (category, colour, brand, distinctive marks).
+2. **Match.** Each report lists reports of the opposite kind that share its tags.
+3. **Claim.** The claimant explains why it's theirs (or where they found it). The reporter accepts and sets a meeting place and time, or declines.
+4. **Meet.** The claimant gets a 6-digit handoff code. The reporter types it in at the meeting to confirm the return.
+5. **Recover.** The item is marked returned, leaves the feed, and the finder earns trust points on the leaderboard.
 
-**Snap → Match → Claim → Verify → Recover**
+Contact details stay hidden until a claim is accepted, and only one handoff per item can be in progress at a time.
 
-Students can upload an item photo, let AI help with tags, browse campus reports, and complete the return with a verification flow.
+## Tech stack
 
----
+| Area | Tools |
+| --- | --- |
+| Frontend | React 19, Vite, React Router, Tailwind CSS |
+| Backend | Node.js, Express, Sequelize |
+| Database | Postgres (Neon) |
+| Auth | JWT, bcrypt, Firebase (Google sign-in) |
+| Images and AI | Cloudinary, sharp, OpenAI |
+| Testing and CI | Node test runner against a real Postgres, GitHub Actions |
+| Hosting | Vercel |
 
-## Key Features
+## Project structure
 
-### 1. AI Vision Tags
+```text
+backend/
+  server.js        Express app and local entry point
+  db.js            Postgres connection, models and associations
+  middleware.js    Auth, error handling, rate limits, input helpers
+  firebase.js      Verifies Google sign-in tokens
+  routes/          auth.js, items.js, claims.js
+  services/        ai.js (photo tagging), images.js (resize, upload, URL handling)
+  test/            API integration tests
+frontend/
+  src/
+    App.jsx        Routes, route guard, lazy-loaded pages
+    pages/         Home, ItemDetail, Upload, MyActivity, Profile, Stats, Scanner, Auth
+    components/    Layout and the pieces of the item page
+.github/workflows/ CI: API tests, frontend lint and build
+vercel.json        Serves the API and the built frontend from one project
+```
 
-- Upload a photo and get helpful tags like category, color, brand, and distinctive features.
-- Makes reports easier to search and match.
+## Run locally
 
-### 2. Lost and Found Matching
-
-- Lost reports and found reports are compared using item details.
-- Possible matches appear directly inside the item page.
-
-### 3. Secure Claim Flow
-
-- Students can submit a claim request for an item.
-- The reporter can accept or reject claims.
-- Return verification helps close the loop after the handoff.
-
-### 4. Trust and Activity
-
-- Users earn trust score for helpful activity.
-- The app includes profiles, recent activity, stats, and a campus leaderboard.
-
-### 5. Cloud Image Storage
-
-- Images are compressed and hosted with Cloudinary.
-- Older Cloudinary images are handled so old reports still render correctly.
-
----
-
-## Tech Stack
-
-| Layer | Tech |
-| :-- | :-- |
-| **Frontend** | React, Vite, Tailwind CSS, Lucide Icons |
-| **Backend** | Node.js, Express |
-| **Database** | Neon Postgres, Sequelize |
-| **Auth** | JWT, Google login, Firebase |
-| **AI** | OpenAI vision analysis |
-| **Images** | Cloudinary |
-| **Deployment** | Vercel |
-
----
-
-## Snapshots
-
-<img src="README-assets/image_1.png" alt="CampusFind snapshot 1" width="100%" />
-
-<img src="README-assets/image_2.png" alt="CampusFind snapshot 2" width="100%" />
-
----
-
-## Demo Video
-
-https://www.youtube.com/watch?v=rP8kG_iP4Lg
-
----
-
-## Run Locally
-
-### Backend
+You need Node 20+ and a Postgres database (a free Neon project works).
 
 ```bash
 cd backend
 npm install
-cp .env.example .env
-npm run dev
+cp .env.example .env   # fill in the values
+npm run db:sync        # creates any missing tables
+npm run dev            # http://localhost:5001
 ```
-
-### Frontend
 
 ```bash
 cd frontend
 npm install
-npm run dev
+cp .env.example .env   # Firebase web config
+npm run dev            # http://localhost:5173, proxies /api to the backend
 ```
 
-The frontend runs with Vite and proxies API requests to the backend on `http://127.0.0.1:5001`.
+`SECRET_KEY` is required in production; the server refuses to start without it. See [`backend/.env.example`](backend/.env.example) and [`frontend/.env.example`](frontend/.env.example) for every setting.
+
+## Tests
+
+The API tests rebuild every table, so they only run against a throwaway database passed in `TEST_DATABASE_URL` (a local Postgres, or a database whose name contains `test`). They never use the `DATABASE_URL` from `.env`.
+
+```bash
+cd backend
+TEST_DATABASE_URL=postgres://postgres@127.0.0.1:5432/campusfind_test npm test
+```
+
+They cover sign-up and login rules, token checks, upload authorisation, pagination and search escaping, contact privacy, the full claim and handoff flow, code expiry and replay, and rate limiting.
+
+## API
+
+| Method and path | Who | Purpose |
+| --- | --- | --- |
+| `POST /api/auth/register`, `/login`, `/google` | anyone, rate limited | Create an account or sign in |
+| `GET /api/auth/me`, `PUT /api/auth/profile` | signed in | Current user and profile edits |
+| `GET /api/auth/leaderboard` | anyone | Top finders |
+| `GET /api/items` | anyone | Feed: `type`, `q`, `limit`, `offset` |
+| `GET /api/items/stats` | anyone | Counts for the insights page |
+| `GET /api/items/:id`, `/match/:id` | anyone | Item detail and possible matches |
+| `POST /api/items` | signed in, rate limited | Report an item (multipart photo) |
+| `GET /api/items/my` | signed in | Items I reported or claimed |
+| `POST /api/claims`, `GET /api/claims/item/:id` | signed in | Submit and list claims |
+| `POST /api/claims/:id/respond` | reporter | Accept or decline a claim |
+| `POST /api/claims/verify` | reporter, rate limited | Confirm a handoff with the 6-digit code |
+| `GET /api/claims/notifications`, `POST .../read` | signed in | In-app notifications |
+
+## Security
+
+- Passwords are hashed with bcrypt, and a wrong password looks exactly like an unknown email.
+- Tokens are HS256 JWTs that expire after 24 hours.
+- Uploads require sign-in before any image processing or AI call happens.
+- Reporter contact details are only sent to the reporter and to a claimant whose claim was accepted.
+- The handoff code is only shown to the claimant, only matches items the caller reported, expires 7 days after the meeting, and guesses are rate limited.
+- Rate limits are kept in memory per server instance, so on serverless hosting they slow attackers down rather than stop them.
 
 ---
 
-Built with ❤️ by team **Deploy for Good**.
+Built by team **Deploy for Good**.

@@ -1,37 +1,22 @@
 # Dependencies
 node_modules/
-.venv/
-venv/
-__pycache__/
 
-# Environment
+# Environment and credentials
 .env
 backend/.env
 frontend/.env
-
-# Build
-frontend/dist/
-dist/
-dist-ssr/
-*.local
-*.pyc
-
-# OS
-.DS_Store
-
-# Firebase
 serviceAccountKey.json
 backend/serviceAccountKey.json
 
-# IDE
+# Build output
+frontend/dist/
+dist/
+*.local
+
+# OS / editor
+.DS_Store
 .vscode/
 .idea/
 
-# Database
-*.db
-instance/
-
 # Logs
-logs/
 *.log
-npm-debug.log*
