@@ -1,51 +1,33 @@
-const express = require("express");
-const cors = require("cors");
 const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, ".env") });
-
-const { connectDB } = require("./config/neon");
-
-// Import Routes
-const authRoutes = require("./routes/auth");
-const authGoogleRoutes = require("./routes/authGoogle");
-const itemRoutes = require("./routes/items");
-const claimRoutes = require("./routes/claims");
+const express = require("express");
+const { sequelize } = require("./db");
+const { errorHandler } = require("./middleware");
 
 const app = express();
 
-// --------------- Middleware ---------------
-app.use(cors({ origin: "*", credentials: true }));
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.set("trust proxy", 1); // behind Vercel's proxy: needed for correct client IPs in rate limits
+app.disable("x-powered-by");
+app.use(express.json({ limit: "100kb" })); // uploads go through multer, so JSON bodies stay small
 
-// Serve uploaded files (local dev only)
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/items", require("./routes/items"));
+app.use("/api/claims", require("./routes/claims"));
+app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
-// --------------- Routes ---------------
-app.use("/api/auth", authRoutes);
-app.use("/api/auth", authGoogleRoutes);
-app.use("/api/items", itemRoutes);
-app.use("/api/claims", claimRoutes);
+app.use((req, res) => res.status(404).json({ error: "Not found" }));
+app.use(errorHandler);
 
-// Health Check
-app.get("/", (req, res) => {
-  res.send("CampusFind API is running 🚀");
-});
-
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", message: "Backend is reachable" });
-});
-
-// --------------- Start Server ---------------
-const PORT = process.env.PORT || 5001;
-
-if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
-  // Connect immediately for local dev
-  connectDB().then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+// On Vercel the app is exported as a function; locally we listen directly.
+if (!process.env.VERCEL) {
+  const port = process.env.PORT || 5001;
+  sequelize
+    .authenticate()
+    .then(() => app.listen(port, () => console.log(`API listening on http://localhost:${port}`)))
+    .catch((err) => {
+      console.error("Database connection failed:", err.message);
+      process.exit(1);
     });
-  });
 }
 
 module.exports = app;

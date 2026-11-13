@@ -1,391 +1,233 @@
+const crypto = require("crypto");
 const express = require("express");
-const { Claim, Item, User } = require("../models");
-const { authMiddleware } = require("../middleware/auth");
 const { Op } = require("sequelize");
+const { sequelize, Claim, Item, User } = require("../db");
+const { HttpError, clip, parseId, asyncHandler, authMiddleware, verifyLimiter } = require("../middleware");
 
 const router = express.Router();
-const FINAL_CLAIM_STATUSES = ["completed"];
 
-const completedClaimForItem = async (itemId, exceptClaimId = null) => {
-  const where = {
-    item_id: itemId,
-    status: { [Op.in]: FINAL_CLAIM_STATUSES },
-  };
+const HANDOFF_POINTS = 10;
+const CODE_VALID_DAYS = 7; // after the scheduled meeting time
 
-  if (exceptClaimId) {
-    where.id = { [Op.ne]: exceptClaimId };
-  }
+const iso = (date) => (date ? date.toISOString() : null);
 
-  return Claim.findOne({ where });
-};
-
-const itemIsUnavailable = async (item) =>
-  item.status === "claimed" || Boolean(await completedClaimForItem(item.id));
+// An item is unavailable once it is marked recovered or any claim on it has completed
+// (older rows can have a completed claim without the item status being updated).
+const isRecovered = async (item) =>
+  item.status !== "unresolved" || (await Claim.count({ where: { item_id: item.id, status: "completed" } })) > 0;
 
 // ==================== Submit Claim ====================
-router.post("/", authMiddleware, async (req, res) => {
-  try {
-    const { item_id, message } = req.body;
-    if (!item_id) return res.status(400).json({ error: "Item ID required" });
+router.post(
+  "/",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const item = await Item.findByPk(parseId(req.body.item_id));
+    if (!item) throw new HttpError(404, "Item not found");
+    if (item.user_id === req.user.id) throw new HttpError(400, "You can't claim your own item");
+    if (await isRecovered(item)) throw new HttpError(409, "This item has already been recovered.");
 
-    const item = await Item.findByPk(item_id);
-    if (!item) return res.status(404).json({ error: "Item not found" });
-
-    if (item.user_id === req.user.id) {
-      return res.status(400).json({ error: "You cannot claim your own report." });
-    }
-
-    if (await itemIsUnavailable(item)) {
-      return res.status(409).json({
-        error: "This item has already been recovered.",
-      });
-    }
-
-    // Prevent duplicate claims
-    const existing = await Claim.findOne({ where: { item_id, claimant_id: req.user.id } });
-    if (existing) {
-      return res.status(400).json({ error: "You have already claimed this item." });
-    }
+    const existing = await Claim.findOne({ where: { item_id: item.id, claimant_id: req.user.id } });
+    if (existing) throw new HttpError(400, "You have already claimed this item.");
 
     const claim = await Claim.create({
-      item_id,
+      item_id: item.id,
       claimant_id: req.user.id,
-      message: message || "",
+      message: clip(req.body.message, 500),
       status: "pending",
     });
-
-    // Notify item owner via FCM
-    try {
-      const admin = require("../config/firebase");
-      const owner = await User.findByPk(item.user_id);
-      if (owner && owner.fcm_token) {
-        await admin.messaging().send({
-          notification: {
-            title: "New Claim Request",
-            body: `Someone claimed your found item: ${item.description}`,
-          },
-          token: owner.fcm_token,
-          data: { click_action: `/item/${item.id}` },
-        });
-      }
-    } catch (fcmErr) {
-      console.warn("FCM send failed:", fcmErr.message);
-    }
-
     res.status(201).json({ message: "Claim submitted successfully", claim_id: claim.id });
-  } catch (error) {
-    console.error("Create claim error:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
+  })
+);
 
-// ==================== Get Claims for Item ====================
-router.get("/item/:itemId", authMiddleware, async (req, res) => {
-  try {
-    const item = await Item.findByPk(req.params.itemId);
-    if (!item) return res.status(404).json({ error: "Item not found" });
+// ==================== Claims for an Item ====================
+// The reporter sees every claim; anyone else sees only their own.
+router.get(
+  "/item/:itemId",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const item = await Item.findByPk(parseId(req.params.itemId));
+    if (!item) throw new HttpError(404, "Item not found");
 
-    // If I am the reporter: show ALL claims
     if (item.user_id === req.user.id) {
-      const claims = await Claim.findAll({ 
-        where: { item_id: req.params.itemId },
-        include: [{ model: User, as: 'claimant' }]
+      const claims = await Claim.findAll({
+        where: { item_id: item.id },
+        include: [{ model: User, as: "claimant", attributes: ["id", "name", "profile_photo"] }],
+        order: [["timestamp", "DESC"]],
       });
-
-      const result = claims.map((c) => ({
-        id: c.id,
-        claimant: {
-          id: c.claimant.id,
-          name: c.claimant.name,
-          email: c.claimant.email,
-          profile_photo: c.claimant.profile_photo,
-          phone: c.claimant.phone,
-        },
-        message: c.message,
-        status: c.status,
-        timestamp: c.timestamp ? c.timestamp.toISOString() : null,
-        meeting_time: c.meeting_time ? c.meeting_time.toISOString() : null,
-        meeting_location: c.meeting_location,
-      }));
-
-      return res.json(result);
+      return res.json(
+        claims.map((c) => ({
+          id: c.id,
+          claimant: c.claimant,
+          message: c.message,
+          status: c.status,
+          timestamp: iso(c.timestamp),
+          meeting_time: iso(c.meeting_time),
+          meeting_location: c.meeting_location,
+        }))
+      );
     }
 
-    // If I am a regular user: show only MY claim
-    const myClaim = await Claim.findOne({ where: { item_id: req.params.itemId, claimant_id: req.user.id } });
-    if (myClaim) {
-      return res.json([
-        {
-          id: myClaim.id,
-          status: myClaim.status,
-          message: myClaim.message,
-          response_message: myClaim.response_message,
-          meeting_time: myClaim.meeting_time ? myClaim.meeting_time.toISOString() : null,
-          meeting_location: myClaim.meeting_location,
-          qr_code: myClaim.qr_code,
-        },
-      ]);
-    }
+    const mine = await Claim.findOne({ where: { item_id: item.id, claimant_id: req.user.id } });
+    res.json(
+      mine
+        ? [
+            {
+              id: mine.id,
+              status: mine.status,
+              message: mine.message,
+              response_message: mine.response_message,
+              meeting_time: iso(mine.meeting_time),
+              meeting_location: mine.meeting_location,
+              qr_code: mine.status === "accepted" ? mine.qr_code : null, // handoff code, claimant only
+            },
+          ]
+        : []
+    );
+  })
+);
 
-    res.json([]);
-  } catch (error) {
-    console.error("Get claims error:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
+// ==================== Accept / Reject a Claim ====================
+router.post(
+  "/:claimId/respond",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const { action } = req.body;
+    const claim = await Claim.findByPk(parseId(req.params.claimId), { include: [{ model: Item }] });
+    if (!claim) throw new HttpError(404, "Claim not found");
+    if (claim.Item.user_id !== req.user.id) throw new HttpError(403, "Only the reporter can respond to this claim");
+    if (claim.status !== "pending") throw new HttpError(409, "This claim has already been answered");
 
-// ==================== Respond to Claim (Accept/Reject) ====================
-router.post("/:claimId/respond", authMiddleware, async (req, res) => {
-  try {
-    const { action, response_message, meeting_location, meeting_time } = req.body;
-
-    const claim = await Claim.findByPk(req.params.claimId);
-    if (!claim) return res.status(404).json({ error: "Claim not found" });
-
-    const item = await Item.findByPk(claim.item_id);
-    if (item.user_id !== req.user.id) {
-      return res.status(403).json({ error: "Unauthorized" });
-    }
-
-    if (!["pending", "accepted"].includes(claim.status)) {
-      return res.status(400).json({ error: "This claim has already been closed." });
-    }
+    const response_message = clip(req.body.response_message, 500);
 
     if (action === "reject") {
-      if (claim.status !== "pending") {
-        return res.status(400).json({ error: "Only pending claims can be rejected." });
-      }
-
-      claim.status = "rejected";
-      claim.response_message = response_message || "";
-      await claim.save();
-
-      // Notify claimant
-      try {
-        const admin = require("../config/firebase");
-        const claimant = await User.findByPk(claim.claimant_id);
-        if (claimant && claimant.fcm_token) {
-          await admin.messaging().send({
-            notification: {
-              title: "Claim Rejected ❌",
-              body: `Your claim for '${item.description}' was rejected.`,
-            },
-            token: claimant.fcm_token,
-          });
-        }
-      } catch (fcmErr) {
-        console.warn("FCM send failed:", fcmErr.message);
-      }
-
+      await claim.update({ status: "rejected", response_message });
       return res.json({ message: "Claim rejected" });
     }
 
     if (action === "accept") {
-      if (claim.status !== "pending") {
-        return res.status(400).json({ error: "Only pending claims can be accepted." });
+      const meeting_location = clip(req.body.meeting_location, 200);
+      const meeting_time = new Date(req.body.meeting_time);
+      if (!meeting_location || Number.isNaN(meeting_time.getTime())) {
+        throw new HttpError(400, "A valid meeting location and time are required");
+      }
+      if (await isRecovered(claim.Item)) throw new HttpError(409, "This item has already been recovered.");
+      if ((await Claim.count({ where: { item_id: claim.item_id, status: "accepted" } })) > 0) {
+        throw new HttpError(409, "You already accepted a claim for this item");
       }
 
-      if (item.status === "claimed" || (await completedClaimForItem(item.id, claim.id))) {
-        return res.status(409).json({
-          error: "This item has already been recovered.",
-        });
-      }
+      // The code is shown to the claimant only; the reporter types it in to complete the handoff.
+      let code;
+      do {
+        code = String(crypto.randomInt(100000, 1000000));
+      } while (await Claim.findOne({ where: { qr_code: code, status: "accepted" } }));
 
-      if (!meeting_location || !meeting_time) {
-        return res.status(400).json({ error: "Meeting location and time required for acceptance" });
-      }
-
-      claim.status = "accepted";
-      claim.response_message = response_message || "";
-      claim.meeting_location = meeting_location;
-
-      try {
-        claim.meeting_time = new Date(meeting_time);
-      } catch {
-        return res.status(400).json({ error: "Invalid date format" });
-      }
-
-      // Generate 6-digit verification code
-      const code = String(Math.floor(100000 + Math.random() * 900000));
-      claim.qr_code = code;
-      await claim.save();
-
-      // Notify claimant
-      try {
-        const admin = require("../config/firebase");
-        const claimant = await User.findByPk(claim.claimant_id);
-        if (claimant && claimant.fcm_token) {
-          await admin.messaging().send({
-            notification: {
-              title: "Claim Accepted! ✅",
-              body: `Your claim for '${item.description}' was accepted. Check details!`,
-            },
-            token: claimant.fcm_token,
-            data: { click_action: `/item/${item.id}` },
-          });
-        }
-      } catch (fcmErr) {
-        console.warn("FCM send failed:", fcmErr.message);
-      }
-
-      return res.json({ message: "Claim accepted. Code generated.", qr_token: code });
+      await claim.update({ status: "accepted", response_message, meeting_location, meeting_time, qr_code: code });
+      return res.json({ message: "Claim accepted" });
     }
 
-    res.status(400).json({ error: "Invalid action" });
-  } catch (error) {
-    console.error("Respond to claim error:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
+    throw new HttpError(400, "Invalid action");
+  })
+);
 
-// ==================== Verify Claim (6-digit Code) ====================
-router.post("/verify", authMiddleware, async (req, res) => {
-  try {
-    const { token } = req.body;
-    if (!token) return res.status(400).json({ error: "Code required" });
+// ==================== Verify Handoff Code ====================
+router.post(
+  "/verify",
+  authMiddleware,
+  verifyLimiter,
+  asyncHandler(async (req, res) => {
+    const code = String(req.body.token ?? "").trim();
+    if (!/^\d{6}$/.test(code)) throw new HttpError(400, "Enter the 6-digit code");
 
-    const claim = await Claim.findOne({ where: { qr_code: token, status: "accepted" } });
-    if (!claim) return res.status(400).json({ error: "Invalid or expired code." });
+    // Only codes for items this user reported can match.
+    const claim = await Claim.findOne({
+      where: { qr_code: code, status: "accepted" },
+      include: [{ model: Item, where: { user_id: req.user.id }, required: true }],
+    });
+    const expiresAt = claim?.meeting_time ? claim.meeting_time.getTime() + CODE_VALID_DAYS * 86400000 : Infinity;
+    if (!claim || Date.now() > expiresAt) throw new HttpError(400, "Invalid or expired code.");
 
-    const item = await Item.findByPk(claim.item_id);
+    const item = claim.Item;
+    // The finder earns the points: the claimant for a lost item, the reporter for a found one.
+    const finderId = item.type === "lost" ? claim.claimant_id : req.user.id;
 
-    // Only the finder (item uploader) can verify
-    if (item.user_id !== req.user.id) {
-      return res.status(403).json({
-        error: "Only the original Finder (Item Uploader) can verify this claim.",
-      });
-    }
+    await sequelize.transaction(async (transaction) => {
+      const [updated] = await Claim.update({ status: "completed" }, { where: { id: claim.id, status: "accepted" }, transaction });
+      if (!updated) throw new HttpError(409, "This code was already used");
+      await Item.update({ status: "claimed" }, { where: { id: item.id }, transaction });
+      await User.update(
+        { trust_score: sequelize.literal(`COALESCE(trust_score, 0) + ${HANDOFF_POINTS}`) },
+        { where: { id: finderId }, transaction }
+      );
+    });
 
-    if (claim.status === "completed") {
-      return res.json({ message: "Item already verified!", verified: true });
-    }
-
-    // Update statuses
-    claim.status = "completed";
-    item.status = "claimed";
-
-    // Award trust points (always to the finder)
-    const pointsAwarded = 10;
-    let recipientName = "You";
-
-    if (item.type === "lost") {
-      // Uploader is loser, claimant is finder → reward claimant
-      const claimant = await User.findByPk(claim.claimant_id);
-      if (claimant) {
-        claimant.trust_score = (claimant.trust_score || 0) + pointsAwarded;
-        await claimant.save();
-        recipientName = claimant.name || "Finder";
-      }
-    } else {
-      // Uploader is finder → reward current user
-      req.user.trust_score = (req.user.trust_score || 0) + pointsAwarded;
-      await req.user.save();
-      recipientName = "You";
-    }
-
-    await claim.save();
-    await item.save();
-
+    const finder = finderId === req.user.id ? null : await User.findByPk(finderId, { attributes: ["name"] });
     res.json({
       message: "Item Recovery Successful!",
       verified: true,
       item_title: item.description,
-      finder_bonus: pointsAwarded,
-      rewarded_user: recipientName,
+      finder_bonus: HANDOFF_POINTS,
+      rewarded_user: finder ? finder.name || "Finder" : "You",
     });
-  } catch (error) {
-    console.error("Verification error:", error);
-    res.status(500).json({ error: "Verification failed" });
-  }
-});
+  })
+);
 
-// ==================== Save FCM Token ====================
-router.post("/notifications/token", authMiddleware, async (req, res) => {
-  const { token } = req.body;
-  if (!token) return res.status(400).json({ error: "Token required" });
-
-  req.user.fcm_token = token;
-  await req.user.save();
-
-  res.json({ message: "Token saved" });
-});
-
-// ==================== Mark Notification Read ====================
-router.post("/notifications/read", authMiddleware, async (req, res) => {
-  const { id: notifId } = req.body;
-  if (!notifId) return res.status(400).json({ error: "Notification ID required" });
-
-  const readList = JSON.parse(req.user.read_notifications || "[]");
-  if (!readList.includes(notifId)) {
-    readList.push(notifId);
-    req.user.read_notifications = JSON.stringify(readList);
-    await req.user.save();
-  }
-
-  res.json({ message: "Marked as read" });
-});
-
-// ==================== Get Notifications ====================
-router.get("/notifications", authMiddleware, async (req, res) => {
+// ==================== In-app Notifications ====================
+const readIds = (user) => {
   try {
-    const notifications = [];
-    const readList = JSON.parse(req.user.read_notifications || "[]");
-
-    // 1. As reporter: claims on my items
-    const myItems = await Item.findAll({ where: { user_id: req.user.id } });
-    const myItemIds = myItems.map((i) => i.id);
-
-    if (myItemIds.length > 0) {
-      const incomingClaims = await Claim.findAll({ 
-        where: { item_id: { [Op.in]: myItemIds } },
-        order: [['timestamp', 'DESC']],
-        include: [{ model: Item }]
-      });
-
-      for (const c of incomingClaims) {
-        if (c.status === "pending") {
-          const nid = `claim_${c.id}_pending`;
-          notifications.push({
-            id: nid,
-            text: `New claim request for: ${c.Item?.description || "Unknown"}`,
-            link: `/item/${c.Item?.id}`,
-            time: c.timestamp ? c.timestamp.toISOString() : null,
-            read: readList.includes(nid),
-          });
-        }
-      }
-    }
-
-    // 2. As claimant: my claim updates
-    const myClaims = await Claim.findAll({ 
-      where: { claimant_id: req.user.id },
-      include: [{ model: Item }]
-    });
-
-    for (const c of myClaims) {
-      if (["accepted", "rejected", "completed"].includes(c.status)) {
-        let statusText = c.status;
-        if (c.status === "completed") statusText = "verified & recovered";
-
-        const nid = `claim_${c.id}_${c.status}`;
-        notifications.push({
-          id: nid,
-          text: `Your claim for '${c.Item?.description || "Unknown"}' was ${statusText}`,
-          link: `/item/${c.Item?.id}`,
-          time: c.timestamp ? c.timestamp.toISOString() : null,
-          read: readList.includes(nid),
-        });
-      }
-    }
-
-    // Sort by time (newest first)
-    notifications.sort((a, b) => new Date(b.time) - new Date(a.time));
-
-    res.json(notifications);
-  } catch (error) {
-    console.error("Notifications error:", error);
-    res.json([]);
+    const parsed = JSON.parse(user.read_notifications || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
   }
-});
+};
+
+router.get(
+  "/notifications",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const read = new Set(readIds(req.user));
+    const notify = (c, text) => {
+      const id = `claim_${c.id}_${c.status}`;
+      return { id, text, link: `/item/${c.item_id}`, time: iso(c.timestamp), read: read.has(id) };
+    };
+
+    const [incoming, mine] = await Promise.all([
+      // Pending claims on items I reported
+      Claim.findAll({
+        where: { status: "pending" },
+        include: [{ model: Item, where: { user_id: req.user.id }, required: true }],
+      }),
+      // Updates on claims I made
+      Claim.findAll({
+        where: { claimant_id: req.user.id, status: { [Op.in]: ["accepted", "rejected", "completed"] } },
+        include: [{ model: Item }],
+      }),
+    ]);
+
+    const notifications = [
+      ...incoming.map((c) => notify(c, `New claim request for: ${c.Item.description}`)),
+      ...mine.map((c) =>
+        notify(c, `Your claim for '${c.Item?.description || "Unknown"}' was ${c.status === "completed" ? "verified & recovered" : c.status}`)
+      ),
+    ];
+    notifications.sort((a, b) => new Date(b.time) - new Date(a.time));
+    res.json(notifications);
+  })
+);
+
+router.post(
+  "/notifications/read",
+  authMiddleware,
+  asyncHandler(async (req, res) => {
+    const id = clip(req.body.id, 100);
+    if (!/^claim_\d+_[a-z]+$/.test(id)) throw new HttpError(400, "Invalid notification ID");
+
+    const read = readIds(req.user);
+    if (!read.includes(id)) {
+      await req.user.update({ read_notifications: JSON.stringify([...read, id].slice(-200)) });
+    }
+    res.json({ message: "Marked as read" });
+  })
+);
 
 module.exports = router;
