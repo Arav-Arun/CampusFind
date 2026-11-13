@@ -16,7 +16,6 @@ Return ONLY a raw JSON object (no markdown formatting) with the following fields
 
 const text = (value, max) => (typeof value === "string" ? value.trim().slice(0, max) : "");
 
-// Used when tagging is unavailable: leave tags empty rather than storing placeholder text.
 const fallback = (userDescription) => ({
   category: "",
   color: "",
@@ -25,13 +24,6 @@ const fallback = (userDescription) => ({
   distinctive_features: [],
 });
 
-/**
- * Tags an item photo with GPT-4o-mini. Never throws: on any failure it returns
- * a generic result so reporting an item still works. Output is clamped to the
- * database column sizes.
- * @param {string} imageDataUri base64 data URI of the photo
- * @returns {Promise<{category: string, color: string, brand: string, description: string, distinctive_features: string[]}>}
- */
 async function analyzeImage(imageDataUri, userDescription = "") {
   const openai = getClient();
   if (!openai) return fallback(userDescription);
@@ -68,16 +60,9 @@ async function analyzeImage(imageDataUri, userDescription = "") {
   }
 }
 
-// Embeddings power semantic matching. 512 dimensions (instead of the model's
-// default 1536) keeps the vector index small with little loss in quality.
 const EMBEDDING_MODEL = "text-embedding-3-small";
 const EMBEDDING_DIMS = 512;
 
-/**
- * Embeds several texts in one request.
- * @param {string[]} texts
- * @returns {Promise<number[][] | null>} one vector per text, or null when no API key is configured
- */
 async function embed(texts) {
   const openai = getClient();
   if (!openai) return null;
@@ -85,5 +70,4 @@ async function embed(texts) {
   return response.data.sort((a, b) => a.index - b.index).map((d) => d.embedding);
 }
 
-// Exported as one object and called as ai.embed(...) elsewhere, so tests can swap in a fake.
 module.exports = { analyzeImage, embed, EMBEDDING_DIMS };

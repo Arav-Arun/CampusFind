@@ -21,7 +21,6 @@ const Section = ({ title, items, empty }) => (
   </section>
 );
 
-/** Items the user reported or claimed, split into open and closed. */
 const MyActivity = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);

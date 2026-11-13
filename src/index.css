@@ -2,22 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design tokens (RGB triples so Tailwind can apply opacity). */
 :root {
-  /* Original CampusFind greys and blue accent */
-  --paper: 32 33 36; /* #202124 */
-  --card: 48 49 52; /* #303134 */
-  --subtle: 60 64 67; /* #3C4043 */
-  --line: 66 68 72; /* #424448 */
-  --ink: 232 234 237; /* #E8EAED */
-  --muted: 154 160 166; /* #9AA0A6 */
-  --brand: 0 188 212; /* #00BCD4 */
-  --brand-strong: 0 173 196; /* #00ADC4 */
-  /* States, from the same dark palette */
-  --lost: 242 139 130; /* #F28B82 */
-  --found: 129 201 149; /* #81C995 */
-  --progress: 253 214 99; /* #FDD663 */
-  --recovered: 138 180 248; /* #8AB4F8 */
+  --paper: 32 33 36;
+  --card: 48 49 52;
+  --subtle: 60 64 67;
+  --line: 66 68 72;
+  --ink: 232 234 237;
+  --muted: 154 160 166;
+  --brand: 0 188 212;
+  --brand-strong: 0 173 196;
+  --lost: 242 139 130;
+  --found: 129 201 149;
+  --progress: 253 214 99;
+  --recovered: 138 180 248;
 }
 
 @layer base {
@@ -68,7 +65,6 @@
     @apply px-2.5 py-1 bg-subtle rounded-md text-sm text-text;
   }
 
-  /* Claim statuses */
   .status-pending {
     @apply text-progress bg-progress/15;
   }
@@ -82,8 +78,6 @@
     @apply text-recovered bg-recovered/15;
   }
 
-  /* The handoff code is printed on a cloakroom-style ticket:
-     a dashed tear line with a notch bitten out of each edge. */
   .ticket {
     @apply relative bg-surface border border-line rounded-xl;
   }

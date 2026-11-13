@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Chart } from "react-google-charts";
 import api from "../api";
 
-// Chart colours mirror the CSS tokens in index.css.
 const INK = "#E8EAED";
 const MUTED = "#9AA0A6";
 const LINE = "#3C4043";

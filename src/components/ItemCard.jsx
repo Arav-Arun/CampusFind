@@ -11,7 +11,7 @@ const ItemCard = ({ item }) => {
   return (
     <Link
       to={`/item/${item.id}`}
-      state={{ item }} // lets the detail page render instantly while it loads the rest
+      state={{ item }}
       className="group block rounded-xl border border-line bg-surface p-2 transition-colors hover:border-text/30"
     >
       <SafeImage

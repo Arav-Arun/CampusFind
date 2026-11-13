@@ -11,14 +11,12 @@ const {
   optionalAuth,
   uploadLimiter,
 } = require("../middleware");
-// Services are used through their module objects so tests can swap in fakes.
 const ai = require("../services/ai");
 const images = require("../services/images");
 const matching = require("../services/matching");
 
 const { parseFeatures, contains } = matching;
 
-// Public, user-independent responses can be served from Vercel's CDN for a short while.
 const cachePublic = (res, seconds) =>
   res.set("Cache-Control", `public, max-age=0, s-maxage=${seconds}, stale-while-revalidate=${seconds * 3}`);
 
@@ -27,13 +25,6 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 
 const RECOVERED_STATUSES = ["claimed", "matched", "completed"];
 
-/**
- * Where an item is in the claim process:
- *   "available"   no handoff has been agreed yet
- *   "in_progress" the reporter accepted a claim and the handoff is pending
- *   "claimed"     the handoff was verified: the item is recovered
- * Looks up every item's claims in one query, so lists don't cost one query per item.
- */
 const claimStateResolver = async (items) => {
   const byItem = new Map();
   if (items.length > 0) {
@@ -72,10 +63,9 @@ const summarize = async (items) => {
   });
 };
 
-// ==================== Create Item ====================
 router.post(
   "/",
-  authMiddleware, // before any upload/AI work so anonymous requests can't spend credits
+  authMiddleware,
   uploadLimiter,
   upload.single("image"),
   asyncHandler(async (req, res) => {
@@ -93,7 +83,7 @@ router.post(
 
     const description = clip(req.body.description, 2000);
     const dataUri = `data:image/jpeg;base64,${compressed.toString("base64")}`;
-    // Hosting the photo and tagging it are independent, so run them together.
+
     const [image_url, analysis] = await Promise.all([
       images.uploadImage(compressed).catch((err) => {
         console.error("Image upload failed:", err.message);
@@ -110,14 +100,12 @@ router.post(
       // ignore malformed tags
     }
 
-    // The reporter picks the day; anything missing, invalid or in the future means "now".
     const reported = new Date(req.body.date_lost);
     const date_lost = Number.isNaN(reported.getTime()) || reported > new Date() ? new Date() : reported;
 
     const item = await Item.create({
       user_id: req.user.id,
       type,
-      // The reporter's own words win; the AI description only fills a blank.
       description: description || analysis.description || "No description",
       location: clip(req.body.location, 200) || "Unknown",
       date_lost,
@@ -129,8 +117,6 @@ router.post(
       contact_info: clip(req.body.contact_info, 200),
     });
 
-    // Embed the report and alert reporters of similar ones. A failure here only
-    // costs the semantic match, never the report itself.
     try {
       if (await matching.storeEmbeddings([item])) await matching.alertMatches(item);
     } catch (err) {
@@ -149,7 +135,6 @@ router.post(
   })
 );
 
-// ==================== Feed ====================
 router.get(
   "/",
   asyncHandler(async (req, res) => {
@@ -159,7 +144,6 @@ router.get(
 
     const where = {};
     if (include_claimed !== "true") {
-      // Recovered items leave the feed, including legacy rows whose claim finished but status was never updated.
       where.status = { [Op.notIn]: RECOVERED_STATUSES };
       where[Op.and] = [
         sequelize.literal(`NOT EXISTS (SELECT 1 FROM claim WHERE claim.item_id = "Item"."id" AND claim.status = 'completed')`),
@@ -172,14 +156,12 @@ router.get(
       where[Op.or] = ["description", "category", "brand", "location"].map((field) => ({ [field]: contains(search) }));
     }
 
-    // Fetch one extra row to know whether another page exists.
     const rows = await Item.findAll({ where, order: [["date_lost", "DESC"], ["id", "DESC"]], limit: limit + 1, offset });
     cachePublic(res, 15);
     res.json({ items: await summarize(rows.slice(0, limit)), has_more: rows.length > limit });
   })
 );
 
-// ==================== My Items (reported + claimed) ====================
 router.get(
   "/my",
   authMiddleware,
@@ -197,7 +179,6 @@ router.get(
   })
 );
 
-// ==================== Campus Stats ====================
 router.get(
   "/stats",
   asyncHandler(async (req, res) => {
@@ -213,7 +194,6 @@ router.get(
                   END AS state
                 FROM item i
               ) s GROUP BY type, state`),
-      // Older rows saved "General Item" when tagging failed; count those as uncategorised.
       select(`SELECT INITCAP(COALESCE(NULLIF(NULLIF(LOWER(TRIM(category)), ''), 'general item'), 'uncategorized')) AS name, COUNT(*)::int AS count
               FROM item GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 12`),
       select(`SELECT TRIM(SPLIT_PART(COALESCE(NULLIF(location, ''), 'Unknown'), ',', 1)) AS name, COUNT(*)::int AS count
@@ -237,14 +217,12 @@ router.get(
   })
 );
 
-// ==================== Possible Matches ====================
 router.get(
   "/match/:id",
   asyncHandler(async (req, res) => {
     const source = await Item.findByPk(parseId(req.params.id));
     if (!source) throw new HttpError(404, "Item not found");
 
-    // Nearest reports by meaning when this one has an embedding, shared tags otherwise.
     const semantic = await matching.semanticMatches(source).catch((err) => {
       console.error("Semantic matching failed:", err.message);
       return null;
@@ -272,12 +250,11 @@ router.get(
         }))
         .filter((m) => !m.locked)
         .slice(0, 5)
-        .map(({ locked, ...m }) => m) // eslint-disable-line no-unused-vars
+        .map(({ locked, ...m }) => m)
     );
   })
 );
 
-// ==================== Single Item ====================
 router.get(
   "/:id",
   optionalAuth,
@@ -287,7 +264,6 @@ router.get(
     });
     if (!item) throw new HttpError(404, "Item not found");
 
-    // Contact details are only for the reporter and for someone whose claim they accepted.
     const viewer = req.user;
     const canSeeContact =
       viewer &&

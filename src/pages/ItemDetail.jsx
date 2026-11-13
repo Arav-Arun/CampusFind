@@ -26,7 +26,6 @@ const ItemDetail = () => {
   const { user, loading: authLoading } = useAuth();
 
   const { state } = useLocation();
-  // A card passes its summary along, so the page can render before the full item arrives.
   const preview = state?.item?.id === Number(id) ? state.item : null;
   const [item, setItem] = useState(preview);
   const [loading, setLoading] = useState(!preview);
@@ -34,12 +33,10 @@ const ItemDetail = () => {
   const [loadingMatches, setLoadingMatches] = useState(true);
   const [claims, setClaims] = useState([]);
 
-  // Claim modal
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [claimMessage, setClaimMessage] = useState("");
   const [submittingClaim, setSubmittingClaim] = useState(false);
 
-  // Accept modal
   const [selectedClaimId, setSelectedClaimId] = useState(null);
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [meetingDetails, setMeetingDetails] = useState({ location: "", time: "" });
@@ -61,7 +58,6 @@ const ItemDetail = () => {
     [id]
   );
 
-  // The item is reloaded once the session is known: contact details depend on who is asking.
   useEffect(() => {
     if (authLoading) return;
     loadItem()
@@ -83,7 +79,6 @@ const ItemDetail = () => {
     loadClaims().catch((e) => console.error("Failed to fetch claims", e));
   }, [loadClaims, user]);
 
-  // While a handoff is in progress, poll so both sides see status changes (and the contact details unlocked by acceptance).
   useEffect(() => {
     if (!hasAcceptedClaim) return;
     const timer = setInterval(() => {
@@ -93,14 +88,13 @@ const ItemDetail = () => {
     return () => clearInterval(timer);
   }, [hasAcceptedClaim, loadClaims, loadItem]);
 
-  // Celebrate a handoff that completes while this page is open, not every later visit to a recovered item.
   const sawHandoffPending = useRef(false);
   useEffect(() => {
     if (hasAcceptedClaim) sawHandoffPending.current = true;
   }, [hasAcceptedClaim]);
   useEffect(() => {
     if (completedClaim && sawHandoffPending.current) setShowSuccessModal(true);
-  }, [completedClaim?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [completedClaim?.id]);
 
   const submitClaim = async () => {
     setSubmittingClaim(true);

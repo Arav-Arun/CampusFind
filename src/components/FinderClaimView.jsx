@@ -4,7 +4,6 @@ import { CheckCircle } from "lucide-react";
 import Button from "./Button";
 import { formatDateTime } from "../format";
 
-/** The handoff code, printed like a cloakroom ticket the claimant shows at the meeting. */
 const HandoffTicket = ({ claim }) => (
   <div className="ticket">
     <div className="p-5">

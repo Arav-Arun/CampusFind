@@ -2,8 +2,6 @@ const fs = require("fs");
 const path = require("path");
 const admin = require("firebase-admin");
 
-// Firebase Admin is only used to verify Google sign-in tokens. It is initialised
-// lazily so a missing or malformed credential cannot break unrelated routes.
 const init = () => {
   if (admin.apps.length) return;
 

@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { X } from "lucide-react";
 import { useAuth } from "../AuthContext";
 
-/** Nudges signed-in users without a phone number to add one, so finders can reach them. */
 const PhoneBanner = () => {
   const { user } = useAuth();
   const [visible, setVisible] = useState(true);

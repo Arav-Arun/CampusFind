@@ -15,9 +15,7 @@ const {
 const router = express.Router();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// 6+ chars, 1 uppercase, 1 number, 1 special character
 const PASSWORD_RE = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
-// Compared against when the email is unknown so response time doesn't reveal which emails exist.
 const DUMMY_HASH = bcrypt.hashSync("not-a-real-password", 10);
 
 const findByEmail = (email) =>
@@ -36,7 +34,6 @@ const publicUser = (user) => ({
 
 const session = (user) => ({ token: signToken(user), user: publicUser(user) });
 
-// ==================== Register ====================
 router.post(
   "/register",
   authLimiter,
@@ -64,7 +61,6 @@ router.post(
   })
 );
 
-// ==================== Login ====================
 router.post(
   "/login",
   authLimiter,
@@ -74,7 +70,6 @@ router.post(
     if (!email || typeof password !== "string") throw new HttpError(400, "Email and password are required");
 
     const user = await findByEmail(email);
-    // Accounts linked to Google can't use a password, so they fail the same way as a wrong password.
     const usable = user && user.password_hash && !user.google_id;
     const ok = await bcrypt.compare(password, usable ? user.password_hash : DUMMY_HASH);
 
@@ -85,7 +80,6 @@ router.post(
   })
 );
 
-// ==================== Google Sign-In ====================
 router.post(
   "/google",
   authLimiter,
@@ -118,7 +112,6 @@ router.post(
   })
 );
 
-// ==================== Current User ====================
 router.get(
   "/me",
   authMiddleware,
@@ -133,7 +126,6 @@ router.get(
   })
 );
 
-// ==================== Update Profile ====================
 router.put(
   "/profile",
   authMiddleware,
@@ -154,12 +146,11 @@ router.put(
   })
 );
 
-// ==================== Leaderboard ====================
 router.get(
   "/leaderboard",
   asyncHandler(async (req, res) => {
     const users = await User.findAll({
-      where: { trust_score: { [Op.gt]: 0 } }, // only people who have actually returned something
+      where: { trust_score: { [Op.gt]: 0 } },
       order: [["trust_score", "DESC"], ["id", "ASC"]],
       limit: 5,
       attributes: ["id", "name", "trust_score", "profile_photo"],

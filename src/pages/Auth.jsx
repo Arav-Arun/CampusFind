@@ -6,7 +6,6 @@ import Button from "../components/Button";
 import { useAuth } from "../AuthContext";
 import { auth, googleProvider } from "../firebase";
 
-// 6+ chars, 1 uppercase, 1 number, 1 special character (mirrors the server rule)
 const PASSWORD_RE = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
 const PASSWORD_HINT = "At least 6 characters, with an uppercase letter, a number and one of @$!%*?&.";
 
@@ -25,7 +24,6 @@ const Field = ({ icon: Icon, label, ...props }) => {
   );
 };
 
-/** Sign in / sign up page. `mode` is "login" or "signup". */
 const Auth = ({ mode }) => {
   const isSignup = mode === "signup";
   const { login, register, googleLogin } = useAuth();

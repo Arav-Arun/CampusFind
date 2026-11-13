@@ -34,7 +34,6 @@ const Upload = () => {
   const lost = type === "lost";
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
-  // Free the preview's object URL when the photo changes or the page closes.
   useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview]);
 
   const pickFile = (picked) => {

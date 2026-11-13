@@ -4,7 +4,6 @@ import { CheckCircle, ArrowLeft } from "lucide-react";
 import api from "../api";
 import Button from "../components/Button";
 
-/** The reporter enters the claimant's 6-digit handoff code to confirm the item was returned. */
 const Scanner = () => {
   const navigate = useNavigate();
   const [code, setCode] = useState("");

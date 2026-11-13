@@ -8,7 +8,6 @@ const Initial = ({ name }) => (
   </div>
 );
 
-/** Contact details are only sent by the API once the viewer is allowed to see them. */
 const ReporterProfile = ({ reporter }) => {
   if (!reporter) return null;
   const hasContact = reporter.email || reporter.phone || reporter.contact_info;

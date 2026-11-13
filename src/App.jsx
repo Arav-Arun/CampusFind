@@ -8,10 +8,7 @@ import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import ItemDetail from "./pages/ItemDetail";
 
-// Less-visited pages load on demand: Insights pulls in the charting library and
-// the sign-in page pulls in Firebase, so neither slows down browsing.
 const Auth = lazy(() => import("./pages/Auth"));
-/** React.lazy plus a _preload() hook that starts the download early. */
 const lazyPage = (load) => Object.assign(lazy(load), { _preload: load });
 const Upload = lazyPage(() => import("./pages/Upload"));
 const MyActivity = lazyPage(() => import("./pages/MyActivity"));
@@ -19,11 +16,9 @@ const Scanner = lazyPage(() => import("./pages/Scanner"));
 const Stats = lazyPage(() => import("./pages/Stats"));
 const Profile = lazyPage(() => import("./pages/Profile"));
 
-// Analytics only run when a measurement ID is configured.
 const GA_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
 if (GA_ID) ReactGA.initialize(GA_ID);
 
-// Fetch the other pages' code while the browser is idle, so opening them is instant.
 const preloadPages = () => [Upload, MyActivity, Stats, Profile].forEach((page) => page._preload?.());
 if (typeof window !== "undefined") {
   const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
@@ -39,7 +34,6 @@ const PageViews = () => {
   return null;
 };
 
-/** Sends signed-out visitors to /login instead of rendering the page. */
 const RequireAuth = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return null;

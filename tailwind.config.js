@@ -1,4 +1,3 @@
-/** @type {import('tailwindcss').Config} */
 const token = (name) => `rgb(var(--${name}) / <alpha-value>)`;
 
 export default {
@@ -6,15 +5,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: token("paper"), // page
-        surface: token("card"), // raised panels
-        subtle: token("subtle"), // fields, hovers
-        line: token("line"), // borders and dividers
+        background: token("paper"),
+        surface: token("card"),
+        subtle: token("subtle"),
+        line: token("line"),
         text: token("ink"),
         muted: token("muted"),
-        accent: token("brand"), // actions only
+        accent: token("brand"),
         "accent-strong": token("brand-strong"),
-        // Item and claim states. Colour always means a state, never decoration.
         lost: token("lost"),
         found: token("found"),
         progress: token("progress"),

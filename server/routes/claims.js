@@ -7,16 +7,13 @@ const { HttpError, clip, parseId, asyncHandler, authMiddleware, verifyLimiter } 
 const router = express.Router();
 
 const HANDOFF_POINTS = 10;
-const CODE_VALID_DAYS = 7; // after the scheduled meeting time
+const CODE_VALID_DAYS = 7;
 
 const iso = (date) => (date ? date.toISOString() : null);
 
-// An item is unavailable once it is marked recovered or any claim on it has completed
-// (older rows can have a completed claim without the item status being updated).
 const isRecovered = async (item) =>
   item.status !== "unresolved" || (await Claim.count({ where: { item_id: item.id, status: "completed" } })) > 0;
 
-// ==================== Submit Claim ====================
 router.post(
   "/",
   authMiddleware,
@@ -39,8 +36,6 @@ router.post(
   })
 );
 
-// ==================== Claims for an Item ====================
-// The reporter sees every claim; anyone else sees only their own.
 router.get(
   "/item/:itemId",
   authMiddleware,
@@ -78,7 +73,7 @@ router.get(
               response_message: mine.response_message,
               meeting_time: iso(mine.meeting_time),
               meeting_location: mine.meeting_location,
-              qr_code: mine.status === "accepted" ? mine.qr_code : null, // handoff code, claimant only
+              qr_code: mine.status === "accepted" ? mine.qr_code : null,
             },
           ]
         : []
@@ -86,7 +81,6 @@ router.get(
   })
 );
 
-// ==================== Accept / Reject a Claim ====================
 router.post(
   "/:claimId/respond",
   authMiddleware,
@@ -115,7 +109,6 @@ router.post(
         throw new HttpError(409, "You already accepted a claim for this item");
       }
 
-      // The code is shown to the claimant only; the reporter types it in to complete the handoff.
       let code;
       do {
         code = String(crypto.randomInt(100000, 1000000));
@@ -129,7 +122,6 @@ router.post(
   })
 );
 
-// ==================== Verify Handoff Code ====================
 router.post(
   "/verify",
   authMiddleware,
@@ -138,7 +130,6 @@ router.post(
     const code = String(req.body.token ?? "").trim();
     if (!/^\d{6}$/.test(code)) throw new HttpError(400, "Enter the 6-digit code");
 
-    // Only codes for items this user reported can match.
     const claim = await Claim.findOne({
       where: { qr_code: code, status: "accepted" },
       include: [{ model: Item, where: { user_id: req.user.id }, required: true }],
@@ -147,7 +138,6 @@ router.post(
     if (!claim || Date.now() > expiresAt) throw new HttpError(400, "Invalid or expired code.");
 
     const item = claim.Item;
-    // The finder earns the points: the claimant for a lost item, the reporter for a found one.
     const finderId = item.type === "lost" ? claim.claimant_id : req.user.id;
 
     await sequelize.transaction(async (transaction) => {
@@ -171,7 +161,6 @@ router.post(
   })
 );
 
-// ==================== In-app Notifications ====================
 const readIds = (user) => {
   try {
     const parsed = JSON.parse(user.read_notifications || "[]");
@@ -192,17 +181,14 @@ router.get(
     };
 
     const [incoming, mine, alerts] = await Promise.all([
-      // Pending claims on items I reported
       Claim.findAll({
         where: { status: "pending" },
         include: [{ model: Item, where: { user_id: req.user.id }, required: true }],
       }),
-      // Updates on claims I made
       Claim.findAll({
         where: { claimant_id: req.user.id, status: { [Op.in]: ["accepted", "rejected", "completed"] } },
         include: [{ model: Item }],
       }),
-      // New reports that look like one of mine
       MatchAlert.findAll({
         where: { user_id: req.user.id },
         include: [
@@ -211,7 +197,7 @@ router.get(
         ],
         order: [["created_at", "DESC"]],
         limit: 20,
-      }).catch(() => []), // the table only exists once `npm run db:migrate` has run
+      }).catch(() => []),
     ]);
 
     const notifications = [

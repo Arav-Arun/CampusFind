@@ -7,8 +7,6 @@ const api = axios.create({
   },
 });
 
-// Add a request interceptor to attach the token
-// Public, user-independent reads. Sending no token on these lets the CDN serve them from cache.
 const PUBLIC_GET = [/^\/?items\/?(\?|$)/, /^\/?items\/stats/, /^\/?items\/match\//, /^\/?auth\/leaderboard/];
 
 api.interceptors.request.use(
@@ -20,9 +18,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 export default api;

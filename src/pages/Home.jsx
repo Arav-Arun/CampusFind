@@ -5,7 +5,6 @@ import Leaderboard from "../components/Leaderboard";
 import Button from "../components/Button";
 import api from "../api";
 
-// Each chip is a search term: the server matches it against descriptions and tags.
 const CATEGORIES = ["Phone", "Keys", "Wallet", "ID card", "Bottle", "Bag", "Electronics", "Books", "Clothing"];
 const TABS = [
   { value: "all", label: "Everything" },
@@ -18,7 +17,7 @@ const Home = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [search, setSearch] = useState("");
-  const [query, setQuery] = useState(""); // debounced copy of `search`
+  const [query, setQuery] = useState("");
   const [items, setItems] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -40,7 +39,6 @@ const Home = () => {
       signal,
     });
 
-  // Reload from the first page whenever a filter changes; cancel stale requests.
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -56,7 +54,7 @@ const Home = () => {
         setLoading(false);
       });
     return () => controller.abort();
-  }, [activeTab, selectedCategory, query]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeTab, selectedCategory, query]);
 
   const loadMore = async () => {
     setLoadingMore(true);

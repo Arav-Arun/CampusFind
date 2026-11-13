@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import SafeImage from "./SafeImage";
 import { imageSrc } from "../format";
 
-/** Reports of the opposite type that share tags with this item. */
 const MatchList = ({ matches, loadingMatches }) => (
   <section className="mt-12">
     <h2 className="text-xl font-bold">Possible matches</h2>

@@ -131,7 +131,6 @@ const UserMenu = ({ user, logout }) => {
   );
 };
 
-/** Shared page chrome (top bar, mobile tab bar). Pages render into the <Outlet />. */
 const Layout = () => {
   const { user, logout } = useAuth();
 

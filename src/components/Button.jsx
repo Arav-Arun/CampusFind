@@ -7,7 +7,6 @@ const VARIANTS = {
   danger: "bg-surface text-lost border border-lost/30 hover:bg-lost/10",
 };
 
-/** Buttons default to type="button" so they never submit a form by accident. */
 const Button = ({ children, variant = "primary", className = "", type = "button", ...props }) => (
   <button
     type={type}

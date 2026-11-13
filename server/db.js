@@ -1,12 +1,11 @@
 const { Sequelize, DataTypes } = require("sequelize");
 const { EMBEDDING_DIMS } = require("./services/ai");
-require("pg"); // Explicit require so the Vercel bundler includes the driver.
+require("pg");
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set");
 }
 
-// Hosted databases (Neon) require TLS; a local Postgres usually doesn't offer it.
 const isLocal = /@(localhost|127\.0\.0\.1)[:/]/.test(process.env.DATABASE_URL);
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
@@ -37,18 +36,18 @@ const Item = sequelize.define(
   "Item",
   {
     user_id: { type: DataTypes.INTEGER, allowNull: false },
-    type: { type: DataTypes.STRING(20), allowNull: false }, // "lost" | "found"
+    type: { type: DataTypes.STRING(20), allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: false },
     location: { type: DataTypes.STRING(200), allowNull: false },
     date_lost: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     image_url: DataTypes.STRING(500),
-    image_data: DataTypes.TEXT, // legacy rows only; new uploads use image_url
+    image_data: DataTypes.TEXT,
     status: { type: DataTypes.STRING(20), defaultValue: "unresolved" },
     contact_info: DataTypes.STRING(200),
     category: DataTypes.STRING(50),
     color: DataTypes.STRING(50),
     brand: DataTypes.STRING(50),
-    distinctive_features: DataTypes.TEXT, // JSON-encoded string[]
+    distinctive_features: DataTypes.TEXT,
   },
   { tableName: "item", timestamps: false }
 );
@@ -63,19 +62,18 @@ const Claim = sequelize.define(
     response_message: DataTypes.TEXT,
     meeting_location: DataTypes.STRING(200),
     meeting_time: DataTypes.DATE,
-    qr_code: DataTypes.STRING(500), // 6-digit handoff code
+    qr_code: DataTypes.STRING(500),
     timestamp: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   },
   { tableName: "claim", timestamps: false }
 );
 
-// "A new report looks like yours": one row per (your report, new report) pair.
 const MatchAlert = sequelize.define(
   "MatchAlert",
   {
-    user_id: { type: DataTypes.INTEGER, allowNull: false }, // who is told
-    item_id: { type: DataTypes.INTEGER, allowNull: false }, // their report
-    matched_item_id: { type: DataTypes.INTEGER, allowNull: false }, // the new report that resembles it
+    user_id: { type: DataTypes.INTEGER, allowNull: false },
+    item_id: { type: DataTypes.INTEGER, allowNull: false },
+    matched_item_id: { type: DataTypes.INTEGER, allowNull: false },
     similarity: { type: DataTypes.FLOAT, allowNull: false },
     created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   },
@@ -95,23 +93,15 @@ Claim.belongsTo(Item, { foreignKey: "item_id" });
 MatchAlert.belongsTo(Item, { foreignKey: "item_id", as: "item", onDelete: "CASCADE" });
 MatchAlert.belongsTo(Item, { foreignKey: "matched_item_id", as: "matchedItem", onDelete: "CASCADE" });
 
-/**
- * Brings the schema up to date. Safe to run repeatedly: it creates missing
- * tables but never alters or drops existing ones, then adds the pgvector
- * column and index. Item embeddings live outside the Sequelize model, so
- * normal queries never load the vectors.
- * @returns {Promise<{vector: boolean}>} vector is false when pgvector isn't installed
- */
 async function migrate() {
   await sequelize.sync();
-  // Indexes for the hot paths: the feed (newest first) and claim lookups by item and claimant.
   await sequelize.query("CREATE INDEX IF NOT EXISTS item_date_idx ON item (date_lost DESC, id DESC)");
   await sequelize.query("CREATE INDEX IF NOT EXISTS claim_item_idx ON claim (item_id, status)");
   await sequelize.query("CREATE INDEX IF NOT EXISTS claim_claimant_idx ON claim (claimant_id)");
   try {
     await sequelize.query("CREATE EXTENSION IF NOT EXISTS vector");
   } catch (err) {
-    console.warn("pgvector is unavailable, so matching falls back to keywords:", err.message);
+    console.warn("pgvector unavailable, falling back to keyword matching:", err.message);
     return { vector: false };
   }
   await sequelize.query(`ALTER TABLE item ADD COLUMN IF NOT EXISTS embedding vector(${EMBEDDING_DIMS})`);

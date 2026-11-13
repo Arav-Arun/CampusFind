@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useContext, useEffect } from "react";
 import api from "./api";
 
@@ -10,7 +9,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(() => Boolean(localStorage.getItem("token")));
 
-  // Restore the session from a saved token.
   useEffect(() => {
     if (!localStorage.getItem("token")) return;
     api
@@ -25,7 +23,6 @@ export const AuthProvider = ({ children }) => {
     setUser(user);
   };
 
-  // Each action resolves to { success } or { success: false, error } so pages never need try/catch.
   const attempt = (fallback, run) =>
     run().then(
       () => ({ success: true }),

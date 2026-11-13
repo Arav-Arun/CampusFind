@@ -2,12 +2,10 @@ const { Op, QueryTypes } = require("sequelize");
 const { sequelize, Item, MatchAlert } = require("../db");
 const ai = require("./ai");
 
-// Cosine similarity thresholds for text-embedding-3-small on short item descriptions.
-const MATCH_THRESHOLD = 0.4; // listed on the item's page
-const ALERT_THRESHOLD = 0.55; // worth notifying the other reporter
-const SAME_PLACE_BOOST = 0.05; // lost and found in the same building is a good sign
+const MATCH_THRESHOLD = 0.4;
+const ALERT_THRESHOLD = 0.55;
+const SAME_PLACE_BOOST = 0.05;
 
-// Placeholder text older reports saved when photo tagging failed.
 const PLACEHOLDERS = new Set(["general item", "see image", "unknown", "none", "null", "n/a"]);
 const isRealTag = (v) => typeof v === "string" && v.trim() && !PLACEHOLDERS.has(v.trim().toLowerCase());
 
@@ -20,18 +18,13 @@ const parseFeatures = (value) => {
   }
 };
 
-/** Escapes LIKE wildcards so user input is matched literally. */
 const contains = (term) => ({ [Op.iLike]: `%${term.replace(/[\\%_]/g, "\\$&")}%` });
-
 const place = (location) => (location || "").split(",")[0].trim().toLowerCase();
 const opposite = (type) => (type === "lost" ? "found" : "lost");
 
-/** What gets embedded: the description plus every real tag. */
 const embeddingText = (item) =>
   [...new Set([item.description, item.category, item.color, item.brand, ...parseFeatures(item.distinctive_features)].filter(isRealTag).map((v) => v.trim()))].join(". ");
 
-// Whether the pgvector column exists (i.e. `npm run db:migrate` has run). Until it
-// has, matching quietly uses keywords. A "no" is re-checked after a minute.
 let vectorState = { ready: false, checkedAt: 0 };
 async function vectorReady() {
   if (vectorState.ready || Date.now() - vectorState.checkedAt < 60000) return vectorState.ready;
@@ -43,11 +36,10 @@ async function vectorReady() {
   return vectorState.ready;
 }
 
-/** Embeds and stores vectors for the given items. Returns how many were stored. */
 async function storeEmbeddings(items) {
   if (items.length === 0 || !(await vectorReady())) return 0;
   const vectors = await ai.embed(items.map(embeddingText));
-  if (!vectors) return 0; // no OpenAI key configured
+  if (!vectors) return 0;
   await Promise.all(
     items.map((item, i) =>
       sequelize.query("UPDATE item SET embedding = CAST(:vector AS vector) WHERE id = :id", {
@@ -58,11 +50,6 @@ async function storeEmbeddings(items) {
   return items.length;
 }
 
-/**
- * Open reports of the opposite type, nearest first by cosine similarity.
- * @returns {Promise<Array<{item, score, method, reason}> | null>} null when this report
- *   has no embedding (or pgvector isn't set up), so the caller can fall back to keywords
- */
 async function semanticMatches(source, { limit = 10, min = MATCH_THRESHOLD } = {}) {
   if (!(await vectorReady())) return null;
   const [row] = await sequelize.query("SELECT CAST(embedding AS text) AS vector FROM item WHERE id = :id AND embedding IS NOT NULL", {
@@ -71,7 +58,6 @@ async function semanticMatches(source, { limit = 10, min = MATCH_THRESHOLD } = {
   });
   if (!row) return null;
 
-  // The vector is passed as a parameter (not a subquery) so Postgres can use the HNSW index.
   const nearest = await sequelize.query(
     `SELECT i.id, 1 - (i.embedding <=> CAST(:vector AS vector)) AS similarity
      FROM item i
@@ -98,7 +84,7 @@ async function semanticMatches(source, { limit = 10, min = MATCH_THRESHOLD } = {
     .sort((a, b) => b.score - a.score);
 }
 
-/** Fallback for reports without an embedding: share of the source's tags found in each candidate. */
+// Fallback tag-based matching when vector search is unavailable
 async function keywordMatches(source) {
   const terms = [source.category, source.brand, source.color, ...parseFeatures(source.distinctive_features)].filter(isRealTag).map((t) => t.trim());
   if (terms.length === 0) return [];
@@ -123,7 +109,6 @@ async function keywordMatches(source) {
     .sort((a, b) => b.score - a.score);
 }
 
-/** Tells the reporters of strongly similar opposite reports that a new one came in. */
 async function alertMatches(item) {
   const matches = await semanticMatches(item, { limit: 5, min: ALERT_THRESHOLD });
   if (!matches || matches.length === 0) return 0;
@@ -134,14 +119,13 @@ async function alertMatches(item) {
   return matches.length;
 }
 
-/** Embeds every report that doesn't have a vector yet. Returns the number embedded. */
 async function backfill(batchSize = 50) {
   let total = 0;
   for (;;) {
     const batch = await Item.findAll({ where: sequelize.literal('"Item"."embedding" IS NULL'), order: [["id", "ASC"]], limit: batchSize });
     if (batch.length === 0) break;
     const stored = await storeEmbeddings(batch);
-    if (stored === 0) break; // pgvector or the OpenAI key is missing
+    if (stored === 0) break;
     total += stored;
   }
   return total;
