@@ -1,9 +1,5 @@
 # CampusFind
 
-![CampusFind](README-assets/banner.png)
-
-[![CI](https://github.com/Arav-Arun/CampusFind/actions/workflows/ci.yml/badge.svg)](https://github.com/Arav-Arun/CampusFind/actions/workflows/ci.yml)
-
 A lost-and-found app for college campuses. Students report what they lost or found with a photo, the app tags the photo and suggests likely matches, and a claim ends in an in-person handoff confirmed with a one-time code.
 
 **Live:** https://campusfindapp.vercel.app · **Demo video (earlier version):** https://www.youtube.com/watch?v=rP8kG_iP4Lg
