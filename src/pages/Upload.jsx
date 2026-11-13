@@ -6,8 +6,51 @@ import Button from "../components/Button";
 import api from "../api";
 
 const MAX_BYTES = 10 * 1024 * 1024;
+// Vercel rejects request bodies over 4.5 MB, so photos are shrunk before they are sent.
+const UPLOAD_BYTES = 4 * 1024 * 1024;
+const MAX_SIDE = 1600;
 const SUGGESTED_TAGS = ["Phone", "Keys", "Wallet", "ID card", "Laptop", "Bottle", "Notebook", "Bag", "Glasses", "Watch"];
-const today = () => new Date().toISOString().slice(0, 10);
+
+const today = () => {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+};
+
+const loadImage = (file) =>
+  new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Image could not be decoded"));
+    };
+    img.src = url;
+  });
+
+const shrinkImage = async (file) => {
+  let img;
+  try {
+    img = await loadImage(file);
+  } catch {
+    return file;
+  }
+  const scale = Math.min(1, MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(img.naturalWidth * scale);
+  canvas.height = Math.round(img.naturalHeight * scale);
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+  return blob && blob.size < file.size ? new File([blob], "photo.jpg", { type: "image/jpeg" }) : file;
+};
+
+const reportedAt = (day) => (day === today() ? new Date() : new Date(`${day}T00:00`)).toISOString();
 
 const Field = ({ label, hint, htmlFor, children }) => (
   <div>
@@ -59,25 +102,35 @@ const Upload = () => {
     e.preventDefault();
     if (!file) return toast.warn("Add a photo so others can recognise the item.");
 
+    setSubmitting(true);
+    const photo = await shrinkImage(file);
+    if (photo.size > UPLOAD_BYTES) {
+      setSubmitting(false);
+      return toast.error("That photo is too large. Try a smaller one or a screenshot of it.");
+    }
+
     const data = new FormData();
-    data.append("image", file);
+    data.append("image", photo);
     data.append("type", type);
     data.append("description", form.description);
     data.append("location", form.location);
-    data.append("date_lost", form.date);
+    data.append("date_lost", reportedAt(form.date));
     data.append("contact_info", form.contact_info);
     data.append("category", form.category);
     data.append("color", form.color);
     data.append("brand", form.brand);
     data.append("manual_tags", JSON.stringify(tags));
 
-    setSubmitting(true);
     try {
       const res = await api.post("/items", data, { headers: { "Content-Type": "multipart/form-data" } });
       toast.success("Report published.");
       navigate(`/item/${res.data.item.id}`);
     } catch (error) {
-      toast.error(error.response?.data?.error || "The report couldn't be published. Try again.");
+      toast.error(
+        error.response?.status === 413
+          ? "That photo is too large. Try a smaller one."
+          : error.response?.data?.error || "The report couldn't be published. Try again."
+      );
       setSubmitting(false);
     }
   };

@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import Button from "./Button";
+import Button, { buttonClass } from "./Button";
 import { formatDateTime } from "../format";
 
 const STATUS_LABEL = { pending: "Waiting for you", accepted: "Meeting set", rejected: "Declined", completed: "Handed over" };
@@ -18,8 +18,8 @@ const OwnerClaimsView = ({ claims, handleRespond, claimToScan, item }) => {
           <p className="mb-3 mt-1 text-sm text-muted">
             Ask for their 6-digit handoff code and enter it to confirm you returned the item.
           </p>
-          <Link to="/scan">
-            <Button>Enter handoff code</Button>
+          <Link to="/scan" className={buttonClass()}>
+            Enter handoff code
           </Link>
         </div>
       )}

@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { CheckCircle } from "lucide-react";
-import Button from "./Button";
+import Button, { buttonClass } from "./Button";
 import { formatDateTime } from "../format";
 
 const HandoffTicket = ({ claim }) => (
@@ -76,8 +76,8 @@ const FinderClaimView = ({ myClaim, item, user, setShowClaimModal }) => {
       {action}
     </Button>
   ) : (
-    <Link to="/login" className="block">
-      <Button className="w-full py-3 text-base">Sign in to claim</Button>
+    <Link to="/login" className={buttonClass("primary", "w-full py-3 text-base")}>
+      Sign in to claim
     </Link>
   );
 };

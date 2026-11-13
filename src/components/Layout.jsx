@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { Plus, User, Bell, Home, List, BarChart2 } from "lucide-react";
-import Button from "./Button";
+import { buttonClass } from "./Button";
 import { useAuth } from "../AuthContext";
 import api from "../api";
 import PhoneBanner from "./PhoneBanner";
@@ -165,10 +165,8 @@ const Layout = () => {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <Link to="/upload">
-              <Button className="px-3 sm:px-4">
-                <Plus size={16} /> <span className="hidden sm:inline">Report an item</span>
-              </Button>
+            <Link to="/upload" className={buttonClass("primary", "px-3 sm:px-4")}>
+              <Plus size={16} /> <span className="hidden sm:inline">Report an item</span>
             </Link>
             {user ? (
               <>
@@ -176,8 +174,8 @@ const Layout = () => {
                 <UserMenu user={user} logout={logout} />
               </>
             ) : (
-              <Link to="/login">
-                <Button variant="secondary">Sign in</Button>
+              <Link to="/login" className={buttonClass("secondary")}>
+                Sign in
               </Link>
             )}
           </div>

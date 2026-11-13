@@ -9,11 +9,12 @@ const init = () => {
   if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
     credential = admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON));
   } else {
-    const file = path.resolve(__dirname, process.env.FIREBASE_CREDENTIALS_PATH || "serviceAccountKey.json");
+    const file = path.resolve(__dirname, "..", process.env.FIREBASE_CREDENTIALS_PATH || "server/serviceAccountKey.json");
     if (fs.existsSync(file)) credential = admin.credential.cert(JSON.parse(fs.readFileSync(file, "utf8")));
   }
 
-  admin.initializeApp(credential ? { credential } : { projectId: process.env.FIREBASE_PROJECT_ID });
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
+  admin.initializeApp(credential ? { credential } : { projectId });
 };
 
 const verifyIdToken = (idToken) => {

@@ -9,6 +9,14 @@ import { auth, googleProvider } from "../firebase";
 const PASSWORD_RE = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
 const PASSWORD_HINT = "At least 6 characters, with an uppercase letter, a number and one of @$!%*?&.";
 
+const GOOGLE_ERRORS = {
+  "auth/popup-blocked": "Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again.",
+  "auth/network-request-failed": "Couldn't reach Google. Check your connection and try again.",
+  "auth/unauthorized-domain": "Google sign-in isn't available right now. Use your email instead.",
+  "auth/configuration-not-found": "Google sign-in isn't available right now. Use your email instead.",
+  "auth/operation-not-allowed": "Google sign-in isn't available right now. Use your email instead.",
+};
+
 const Field = ({ icon: Icon, label, ...props }) => {
   const id = useId();
   return (
@@ -61,10 +69,8 @@ const Auth = ({ mode }) => {
         return googleLogin(await popup.user.getIdToken());
       } catch (err) {
         if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") return {};
-        if (err.code === "auth/configuration-not-found") {
-          return { error: "Google Sign-In is disabled in the Firebase Console (Authentication > Sign-in method)." };
-        }
-        return { error: "Google sign-in failed: " + err.message };
+        console.error("Google sign-in failed", err);
+        return { error: GOOGLE_ERRORS[err.code] || "Google sign-in failed. Try again." };
       }
     });
 

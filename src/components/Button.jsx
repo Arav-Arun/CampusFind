@@ -7,12 +7,11 @@ const VARIANTS = {
   danger: "bg-surface text-lost border border-lost/30 hover:bg-lost/10",
 };
 
+export const buttonClass = (variant = "primary", className = "") =>
+  `inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${VARIANTS[variant]} ${className}`;
+
 const Button = ({ children, variant = "primary", className = "", type = "button", ...props }) => (
-  <button
-    type={type}
-    className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${VARIANTS[variant]} ${className}`}
-    {...props}
-  >
+  <button type={type} className={buttonClass(variant, className)} {...props}>
     {children}
   </button>
 );

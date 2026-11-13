@@ -143,18 +143,19 @@ router.get(
     const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
 
     const where = {};
+    const and = [];
     if (include_claimed !== "true") {
       where.status = { [Op.notIn]: RECOVERED_STATUSES };
-      where[Op.and] = [
-        sequelize.literal(`NOT EXISTS (SELECT 1 FROM claim WHERE claim.item_id = "Item"."id" AND claim.status = 'completed')`),
-      ];
+      and.push(
+        sequelize.literal(`NOT EXISTS (SELECT 1 FROM claim WHERE claim.item_id = "Item"."id" AND claim.status = 'completed')`)
+      );
     }
     if (type === "lost" || type === "found") where.type = type;
 
-    const search = clip(q, 100);
-    if (search) {
-      where[Op.or] = ["description", "category", "brand", "location"].map((field) => ({ [field]: contains(search) }));
+    for (const term of [clip(q, 100), clip(req.query.tag, 50)].filter(Boolean)) {
+      and.push({ [Op.or]: ["description", "category", "brand", "location"].map((field) => ({ [field]: contains(term) })) });
     }
+    if (and.length) where[Op.and] = and;
 
     const rows = await Item.findAll({ where, order: [["date_lost", "DESC"], ["id", "DESC"]], limit: limit + 1, offset });
     cachePublic(res, 15);

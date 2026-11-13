@@ -32,7 +32,8 @@ const Home = () => {
     api.get("/items", {
       params: {
         type: activeTab === "all" ? undefined : activeTab,
-        q: query || selectedCategory || undefined,
+        q: query || undefined,
+        tag: selectedCategory || undefined,
         limit: PAGE_SIZE,
         offset,
       },
