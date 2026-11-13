@@ -16,9 +16,10 @@ Return ONLY a raw JSON object (no markdown formatting) with the following fields
 
 const text = (value, max) => (typeof value === "string" ? value.trim().slice(0, max) : "");
 
+// Used when tagging is unavailable: leave tags empty rather than storing placeholder text.
 const fallback = (userDescription) => ({
-  category: "General Item",
-  color: "See image",
+  category: "",
+  color: "",
   brand: "",
   description: userDescription || "Check image for details",
   distinctive_features: [],
@@ -53,7 +54,7 @@ async function analyzeImage(imageDataUri, userDescription = "") {
 
     const parsed = JSON.parse(response.choices[0].message.content);
     return {
-      category: text(parsed.category, 50) || "General Item",
+      category: text(parsed.category, 50),
       color: text(parsed.color, 50),
       brand: text(parsed.brand, 50),
       description: text(parsed.description, 500) || userDescription,

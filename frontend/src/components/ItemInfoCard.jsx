@@ -2,10 +2,10 @@ import React from "react";
 import { MapPin, Calendar } from "lucide-react";
 import SafeImage from "./SafeImage";
 import StatusBadge from "./StatusBadge";
-import { formatDay } from "../format";
+import { formatDay, realTags } from "../format";
 
 const ItemInfoCard = ({ item, children }) => {
-  const tags = [item.category, item.color, item.brand, ...(item.distinctive_features || [])].filter(Boolean);
+  const tags = realTags(item.category, item.color, item.brand, ...(item.distinctive_features || []));
 
   return (
     <div className="grid items-start gap-8 lg:grid-cols-2">

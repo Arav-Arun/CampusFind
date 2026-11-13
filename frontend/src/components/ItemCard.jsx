@@ -3,10 +3,10 @@ import { MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import SafeImage from "./SafeImage";
 import StatusBadge from "./StatusBadge";
-import { formatDay } from "../format";
+import { formatDay, realTags } from "../format";
 
 const ItemCard = ({ item }) => {
-  const tags = [item.category, item.color].filter(Boolean).join(", ");
+  const tags = realTags(item.category, item.color).join(", ");
 
   return (
     <Link

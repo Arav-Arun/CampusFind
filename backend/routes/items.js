@@ -208,7 +208,8 @@ router.get(
                   END AS state
                 FROM item i
               ) s GROUP BY type, state`),
-      select(`SELECT INITCAP(TRIM(COALESCE(NULLIF(category, ''), 'Uncategorized'))) AS name, COUNT(*)::int AS count
+      // Older rows saved "General Item" when tagging failed; count those as uncategorised.
+      select(`SELECT INITCAP(COALESCE(NULLIF(NULLIF(LOWER(TRIM(category)), ''), 'general item'), 'uncategorized')) AS name, COUNT(*)::int AS count
               FROM item GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 12`),
       select(`SELECT TRIM(SPLIT_PART(COALESCE(NULLIF(location, ''), 'Unknown'), ',', 1)) AS name, COUNT(*)::int AS count
               FROM item GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 5`),
