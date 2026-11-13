@@ -2,7 +2,7 @@
 //   npm run db:migrate   create missing tables, the pgvector column and indexes (safe to re-run)
 //   npm run db:embed     embed reports that don't have a vector yet
 const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, ".env") });
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 const commands = {
   async migrate() {

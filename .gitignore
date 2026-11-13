@@ -3,15 +3,12 @@ node_modules/
 
 # Environment and credentials
 .env
-backend/.env
-frontend/.env
+.env.local
 serviceAccountKey.json
-backend/serviceAccountKey.json
+server/serviceAccountKey.json
 
 # Build output
-frontend/dist/
 dist/
-*.local
 
 # OS / editor
 .DS_Store
@@ -20,3 +17,6 @@ dist/
 
 # Logs
 *.log
+
+# Vercel
+.vercel/

@@ -3,13 +3,12 @@
   "version": "1.0.0",
   "description": "CampusFind API: Express, Postgres (Neon), OpenAI, Cloudinary",
   "private": true,
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
+    "start": "node index.js",
+    "dev": "node --watch index.js",
     "db:migrate": "node cli.js migrate",
-    "db:embed": "node cli.js embed",
-    "test": "node --test test/api.test.js"
+    "db:embed": "node cli.js embed"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

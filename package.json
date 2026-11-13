@@ -1,13 +1,17 @@
 {
-  "name": "campusfind-client",
+  "name": "campusfind",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:server": "node --watch server/index.js",
     "build": "vite build",
+    "start": "node server/index.js",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:migrate": "node server/cli.js migrate",
+    "db:embed": "node server/cli.js embed"
   },
   "dependencies": {
     "axios": "^1.13.2",

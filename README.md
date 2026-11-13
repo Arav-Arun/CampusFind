@@ -1,6 +1,10 @@
 # CampusFind
 
+![CampusFind](public/banner.png)
+
 A lost-and-found app for college campuses. Students report what they lost or found with a photo, the app tags the photo and suggests likely matches, and a claim ends in an in-person handoff confirmed with a one-time code.
+
+**Live:** https://campusfindapp.vercel.app · **Demo video (earlier version):** https://www.youtube.com/watch?v=rP8kG_iP4Lg
 
 ## Why
 
@@ -25,28 +29,25 @@ Contact details stay hidden until a claim is accepted, and only one handoff per 
 | Database | Postgres (Neon) with pgvector |
 | Auth | JWT, bcrypt, Firebase (Google sign-in) |
 | Images and AI | Cloudinary, sharp, OpenAI |
-| Testing and CI | Node test runner against a real Postgres, GitHub Actions |
 | Hosting | Vercel |
 
 ## Project structure
 
 ```text
-backend/
-  server.js        Express app and local entry point
-  db.js            Postgres connection, models and associations
-  middleware.js    Auth, error handling, rate limits, input helpers
-  firebase.js      Verifies Google sign-in tokens
-  routes/          auth.js, items.js, claims.js
-  cli.js           npm run db:migrate / db:embed
-  services/        ai.js (tagging, embeddings), images.js (resize, upload, URLs), matching.js
-  test/            API integration tests
-frontend/
-  src/
-    App.jsx        Routes, route guard, lazy-loaded pages
-    pages/         Home, ItemDetail, Upload, MyActivity, Profile, Stats, Scanner, Auth
-    components/    Layout and the pieces of the item page
-.github/workflows/ CI: API tests, frontend lint and build
-vercel.json        Serves the API and the built frontend from one project
+public/              Static assets (logo, banner, Google icon)
+src/
+  App.jsx            Routes, route guard, lazy-loaded pages
+  pages/             Home, ItemDetail, Upload, MyActivity, Profile, Stats, Scanner, Auth
+  components/        Layout, cards, modals, and shared UI pieces
+server/
+  index.js           Express app and entry point
+  db.js              Postgres connection, models and associations
+  middleware.js       Auth, error handling, rate limits, input helpers
+  firebase.js        Verifies Google sign-in tokens
+  cli.js             npm run db:migrate / db:embed
+  routes/            auth.js, items.js, claims.js
+  services/          ai.js (tagging, embeddings), images.js (resize, upload), matching.js
+vercel.json          Serves the API and the built frontend from one project
 ```
 
 ## Run locally
@@ -54,33 +55,20 @@ vercel.json        Serves the API and the built frontend from one project
 You need Node 20+ and a Postgres database (a free Neon project works).
 
 ```bash
-cd backend
-npm install
 cp .env.example .env   # fill in the values
-npm run db:migrate     # missing tables, indexes and the pgvector column (safe to re-run)
-npm run db:embed       # embeds reports that don't have a vector yet
-npm run dev            # http://localhost:5001
-```
 
-```bash
-cd frontend
+# Server
+cd server && npm install && cd ..
+npm run db:migrate     # create tables, indexes, pgvector column (safe to re-run)
+npm run db:embed       # embed reports that don't have a vector yet
+npm run dev:server     # http://localhost:5001
+
+# Client (in a second terminal)
 npm install
-cp .env.example .env   # Firebase web config
-npm run dev            # http://localhost:5173, proxies /api to the backend
+npm run dev            # http://localhost:5173, proxies /api to the server
 ```
 
-`SECRET_KEY` is required in production; the server refuses to start without it. See [`backend/.env.example`](backend/.env.example) and [`frontend/.env.example`](frontend/.env.example) for every setting.
-
-## Tests
-
-The API tests rebuild every table, so they only run against a throwaway database passed in `TEST_DATABASE_URL` (a local Postgres, or a database whose name contains `test`). They never use the `DATABASE_URL` from `.env`.
-
-```bash
-cd backend
-TEST_DATABASE_URL=postgres://postgres@127.0.0.1:5432/campusfind_test npm test
-```
-
-A fake embedder stands in for OpenAI, so semantic matching is tested without network calls. CI uses the `pgvector/pgvector` Postgres image. They cover sign-up and login rules, token checks, upload authorisation, pagination and search escaping, contact privacy, the full claim and handoff flow, code expiry and replay, rate limiting, semantic ranking, match alerts and backfill.
+`SECRET_KEY` is required in production; the server refuses to start without it. See [`.env.example`](.env.example) for every setting.
 
 ## API
 

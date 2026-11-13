@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
 import ItemCard from "../components/ItemCard";
 import Leaderboard from "../components/Leaderboard";
@@ -77,19 +76,9 @@ const Home = () => {
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_17rem]">
       <div className="min-w-0">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="display text-4xl sm:text-5xl">Lost and found</h1>
-            <p className="mt-2 max-w-md text-muted">Everything reported on campus, newest first.</p>
-          </div>
-          <div className="flex gap-2">
-            <Link to="/upload?type=lost">
-              <Button variant="secondary">I lost something</Button>
-            </Link>
-            <Link to="/upload?type=found">
-              <Button>I found something</Button>
-            </Link>
-          </div>
+        <div className="mb-8">
+          <h1 className="display text-4xl sm:text-5xl">Lost and found</h1>
+          <p className="mt-2 max-w-md text-muted">Everything reported on campus, newest first.</p>
         </div>
 
         <div className="mb-6 space-y-3">
