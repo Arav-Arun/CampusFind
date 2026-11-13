@@ -2,21 +2,30 @@
 
 A lost-and-found app for college campuses. Students report what they lost or found with a photo, the app tags the photo and suggests likely matches, and a claim ends in an in-person handoff confirmed with a one-time code.
 
-**Live:** https://campusfindapp.vercel.app · **Demo video (earlier version):** https://www.youtube.com/watch?v=rP8kG_iP4Lg
-
 ## Why
 
 Lost items on campus usually end up in scattered group chats and notice boards. Anyone can say "that's mine", and meeting a stranger to hand something over is awkward. CampusFind puts the whole loop in one place: report, match, claim, meet, confirm.
 
+## Features
+
+- **AI-Powered Photo Tagging**: Upload a photo of a lost or found item. GPT-4o-mini extracts visual details, dominant color, brand, and distinctive marks automatically.
+- **Semantic Vector Matching**: Reports are embedded with OpenAI (`text-embedding-3-small`, 512 dimensions) and matched using cosine similarity in Postgres with pgvector. If vector search is unavailable, it gracefully falls back to tag-based matching.
+- **Match Alerts**: Automatically notifies reporters whenever a new opposite report (lost vs. found) shares strong semantic similarity with their item.
+- **Secure 6-Digit Handoff Verification**: Prevents wrongful claims by issuing a private 6-digit handoff code to the claimant upon claim acceptance. The reporter enters the code during the in-person meeting to verify and close the report.
+- **Trust & Leaderboard System**: Returning an item awards trust points to the finder, featured on the campus leaderboard.
+- **Privacy-Protected Contact Sharing**: Personal phone and contact details remain strictly hidden until the reporter explicitly accepts a claim and sets a meeting.
+- **Campus Insights & Analytics**: Interactive charts showing recovery rates, common item categories, and high-frequency lost-and-found locations across campus.
+- **In-App Notifications**: Real-time updates for claim submissions, accepted handoffs, verified returns, and match suggestions.
+- **Flexible Authentication**: Google Sign-In (Firebase Admin) and email/password authentication secured with bcrypt and 24-hour JWT sessions.
+- **Responsive & Accessible Design**: Built with Tailwind CSS featuring dark mode, mobile navigation bar, and accessible form controls.
+
 ## How it works
 
 1. **Report.** Upload a photo, where you lost or found it, and when. GPT-4o-mini reads the photo and adds tags (category, colour, brand, distinctive marks).
-2. **Match.** Every report is embedded with OpenAI (`text-embedding-3-small`, 512 dimensions) and stored in Postgres with pgvector. Each item page lists the nearest open reports of the opposite kind by cosine similarity, and when a new report closely resembles yours you get a notification. Reports without an embedding fall back to tag matching.
+2. **Match.** Every report is embedded with OpenAI and stored in Postgres with pgvector. Each item page lists the nearest open reports of the opposite kind by cosine similarity.
 3. **Claim.** The claimant explains why it's theirs (or where they found it). The reporter accepts and sets a meeting place and time, or declines.
 4. **Meet.** The claimant gets a 6-digit handoff code. The reporter types it in at the meeting to confirm the return.
 5. **Recover.** The item is marked returned, leaves the feed, and the finder earns trust points on the leaderboard.
-
-Contact details stay hidden until a claim is accepted, and only one handoff per item can be in progress at a time.
 
 ## Tech stack
 
@@ -40,7 +49,7 @@ src/
 server/
   index.js           Express app and entry point
   db.js              Postgres connection, models and associations
-  middleware.js       Auth, error handling, rate limits, input helpers
+  middleware.js      Auth, error handling, rate limits, input helpers
   firebase.js        Verifies Google sign-in tokens
   cli.js             npm run db:migrate / db:embed
   routes/            auth.js, items.js, claims.js
@@ -67,23 +76,6 @@ npm run dev            # http://localhost:5173, proxies /api to the server
 ```
 
 `SECRET_KEY` is required in production; the server refuses to start without it. See [`.env.example`](.env.example) for every setting.
-
-## API
-
-| Method and path | Who | Purpose |
-| --- | --- | --- |
-| `POST /api/auth/register`, `/login`, `/google` | anyone, rate limited | Create an account or sign in |
-| `GET /api/auth/me`, `PUT /api/auth/profile` | signed in | Current user and profile edits |
-| `GET /api/auth/leaderboard` | anyone | Top finders |
-| `GET /api/items` | anyone | Feed: `type`, `q`, `limit`, `offset` |
-| `GET /api/items/stats` | anyone | Counts for the insights page |
-| `GET /api/items/:id`, `/match/:id` | anyone | Item detail and possible matches |
-| `POST /api/items` | signed in, rate limited | Report an item (multipart photo) |
-| `GET /api/items/my` | signed in | Items I reported or claimed |
-| `POST /api/claims`, `GET /api/claims/item/:id` | signed in | Submit and list claims |
-| `POST /api/claims/:id/respond` | reporter | Accept or decline a claim |
-| `POST /api/claims/verify` | reporter, rate limited | Confirm a handoff with the 6-digit code |
-| `GET /api/claims/notifications`, `POST .../read` | signed in | In-app notifications |
 
 ## Security
 
